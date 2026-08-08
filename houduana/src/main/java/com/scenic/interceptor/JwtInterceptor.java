@@ -60,13 +60,16 @@ public class JwtInterceptor implements HandlerInterceptor {
             return false;
         }
 
-        // 登出黑名单校验（Redis 可用时；token 登出后立即失效）
-        if (redisTemplate != null) {
-            String jti = jwtUtil.getJtiFromToken(token);
-            if (jti != null && Boolean.TRUE.equals(redisTemplate.hasKey("jwt:blacklist:" + jti))) {
-                writeError(response, 401, "token 已失效，请重新登录");
+        // 登出黑名单校验（Redis 可用时；Redis 不可用自动降级跳过）
+        try {
+            if (redisTemplate != null) {
+                String jti = jwtUtil.getJtiFromToken(token);
+                if (jti != null && Boolean.TRUE.equals(redisTemplate.hasKey("jwt:blacklist:" + jti))) {
+                    writeError(response, 401, "token 已失效，请重新登录");
                 return false;
+                }
             }
+        } catch (Exception ignored) {
         }
 
         // 角色权限校验

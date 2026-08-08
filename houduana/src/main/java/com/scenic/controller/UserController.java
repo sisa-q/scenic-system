@@ -39,27 +39,33 @@ public class UserController {
         }
 
         // 登录失败限流：5 次失败锁定 15 分钟（Redis 不可用时自动跳过）
-        if (redisTemplate != null) {
-            String failKey = "login:fail:" + username.trim().toLowerCase();
-            String failVal = redisTemplate.opsForValue().get(failKey);
-            if (failVal != null) {
-                try {
-                    if (Integer.parseInt(failVal) >= 5) {
-                        return Result.error("失败次数过多，请15分钟后再试");
+        try {
+            if (redisTemplate != null) {
+                String failKey = "login:fail:" + username.trim().toLowerCase();
+                String failVal = redisTemplate.opsForValue().get(failKey);
+                if (failVal != null) {
+                    try {
+                        if (Integer.parseInt(failVal) >= 5) {
+                            return Result.error("失败次数过多，请15分钟后再试");
+                        }
+                    } catch (NumberFormatException ignored) {
                     }
-                } catch (NumberFormatException ignored) {
                 }
             }
+        } catch (Exception ignored) {
         }
 
         User user = userService.login(username.trim(), password.trim());
         if (user == null) {
-            if (redisTemplate != null) {
-                String failKey = "login:fail:" + username.trim().toLowerCase();
-                Long n = redisTemplate.opsForValue().increment(failKey);
-                if (n != null && n == 1) {
-                    redisTemplate.expire(failKey, Duration.ofMinutes(15));
+            try {
+                if (redisTemplate != null) {
+                    String failKey = "login:fail:" + username.trim().toLowerCase();
+                    Long n = redisTemplate.opsForValue().increment(failKey);
+                    if (n != null && n == 1) {
+                        redisTemplate.expire(failKey, Duration.ofMinutes(15));
+                    }
                 }
+            } catch (Exception ignored) {
             }
             return Result.error("用户名或密码错误");
         }
@@ -78,8 +84,11 @@ public class UserController {
         }
 
         // 登录成功清除失败计数
-        if (redisTemplate != null) {
-            redisTemplate.delete("login:fail:" + username.trim().toLowerCase());
+        try {
+            if (redisTemplate != null) {
+                redisTemplate.delete("login:fail:" + username.trim().toLowerCase());
+            }
+        } catch (Exception ignored) {
         }
 
         String token = jwtUtil.generateToken(user.getId().toString(), user.getUsername(), user.getRole());
@@ -103,8 +112,11 @@ public class UserController {
                 String jti = jwtUtil.getJtiFromToken(token);
                 if (jti != null) {
                     long remainMs = jwtUtil.getRemainingMillis(token);
-                    if (remainMs > 0) {
-                        redisTemplate.opsForValue().set("jwt:blacklist:" + jti, "1", Duration.ofMillis(remainMs));
+                    try {
+                        if (remainMs > 0) {
+                            redisTemplate.opsForValue().set("jwt:blacklist:" + jti, "1", Duration.ofMillis(remainMs));
+                        }
+                    } catch (Exception ignored) {
                     }
                 }
             }
