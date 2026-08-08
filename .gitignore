@@ -1,0 +1,35 @@
+# ===== Node =====
+node_modules/
+dist/
+*.local
+npm-debug.log*
+yarn-error.log*
+
+# ===== Java / Maven =====
+target/
+*.class
+
+# ===== IDE =====
+.idea/
+*.iml
+.vscode/
+
+# ===== 环境与密钥 =====
+.env
+*.env.local
+
+# ===== 日志 =====
+*.log
+
+# ===== 本地工具链（体积大，不入库） =====
+tools/jdk-21.0.12+8/
+tools/apache-maven-3.9.9/
+tools/downloads/
+tools/HBuilderX/
+
+# ===== 移动端构建缓存 =====
+scenic-android/unpackage/
+
+# ===== 系统文件 =====
+Thumbs.db
+.DS_Store

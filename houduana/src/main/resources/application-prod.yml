@@ -1,0 +1,57 @@
+# ============================================================
+# 生产环境配置（Docker 部署使用）
+# 启动方式：SPRING_PROFILES_ACTIVE=prod java -jar houduana-0.0.1-SNAPSHOT.jar
+# 所有敏感值均可通过环境变量覆盖，默认值与 docker-compose.yml 保持一致。
+# ============================================================
+server:
+  port: ${SERVER_PORT:8083}
+
+spring:
+  # ====== 数据源（Docker 内使用 mysql 服务名，本机直连改为 localhost）======
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:mysql}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:digital_ticket}?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USERNAME:scenic}
+    password: ${MYSQL_PASSWORD:REDACTED}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # ====== JPA 配置（生产建议关闭 SQL 日志）======
+  jpa:
+    hibernate:
+      ddl-auto: update          # 首次启动自动建表，保留现有数据
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: false
+
+  # ====== Redis 配置 ======
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+      timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 2
+
+  # ====== Jackson 日期格式 ======
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+
+# ====== JWT 配置（生产务必通过环境变量 JWT_SECRET 更换为长随机串）======
+jwt:
+  secret: ${JWT_SECRET:REDACTED}
+  expire: 86400000
+
+# ====== 日志配置 ======
+logging:
+  level:
+    com.scenic: info
+    org.springframework.web: info
+
+# ====== 天气服务配置 ======
+weather:
+  qweather-key: ${QWEATHER_KEY:}

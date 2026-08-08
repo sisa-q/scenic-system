@@ -1,0 +1,26 @@
+{
+  "name": "scenic-admin",
+  "version": "1.0.0",
+  "private": true,
+  "description": "智慧景区 - 管理端（独立前端）",
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.0",
+    "axios": "^1.6.0",
+    "dayjs": "^1.11.0",
+    "element-plus": "^2.14.3",
+    "pinia": "^2.1.0",
+    "three": "^0.185.1",
+    "vue": "^3.3.0",
+    "vue-router": "^4.2.0"
+  },
+  "devDependencies": {
+    "@vue/cli-service": "~5.0.0",
+    "@vue/compiler-sfc": "^3.3.0",
+    "sass": "^1.69.0",
+    "sass-loader": "^13.3.0"
+  }
+}

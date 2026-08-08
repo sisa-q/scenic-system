@@ -1,0 +1,57 @@
+/* ===== 修复 Vant 与 Element Plus 样式冲突 ===== */
+
+/* 1. 重置 Vant 按钮字体，避免被 Element 影响 */
+.van-button {
+  font-family: inherit;
+}
+.van-button__text {
+  font-family: inherit;
+}
+
+/* 2. 修复 Vant 输入框样式 */
+.van-field__control {
+  font-size: 14px;
+}
+.van-field__control::placeholder {
+  color: #c8c9cc;
+}
+
+/* 3. 修复 Vant 弹窗层级问题（避免被 Element 遮罩覆盖） */
+.van-overlay {
+  z-index: 2000 !important;
+}
+.van-popup {
+  z-index: 2001 !important;
+}
+.van-dialog {
+  z-index: 2002 !important;
+}
+.van-toast {
+  z-index: 2003 !important;
+}
+
+/* 4. 修复 Vant 下拉菜单在移动端的显示 */
+.van-dropdown-menu {
+  z-index: 1000;
+}
+
+/* 5. 避免 Vant 的全局样式污染 Element Plus */
+:root {
+  --van-font-family: inherit;
+}
+
+/* 6. 后台 Element 组件在移动端可能受影响，加保护 */
+.el-dialog {
+  z-index: 1500;
+}
+.el-message {
+  z-index: 2100;
+}
+.el-loading-mask {
+  z-index: 1400;
+}
+
+/* 7. 修复 Vant Tab 在 iPhone 上的安全区适配 */
+.van-tabbar {
+  padding-bottom: env(safe-area-inset-bottom);
+}

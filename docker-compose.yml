@@ -1,0 +1,101 @@
+# ============================================================
+# 智慧景区系统 - 生产部署编排
+# 一键启动：docker compose up -d --build
+# 访问：
+#   游客端 http://localhost
+#   管理端 http://localhost:8081
+#   后端   http://localhost:8083
+# 敏感配置通过根目录 .env 覆盖（可参考 deploy/.env.example）
+# ============================================================
+name: scenic
+
+services:
+  # ---------- MySQL 8 ----------
+  mysql:
+    image: ${MYSQL_IMAGE:-mysql:8.0}
+    container_name: scenic-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-REDACTED}
+      MYSQL_DATABASE: digital_ticket
+      MYSQL_USER: scenic
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-REDACTED}
+      TZ: Asia/Shanghai
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "${MYSQL_HOST_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-REDACTED}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  # ---------- Redis ----------
+  redis:
+    image: ${REDIS_IMAGE:-redis:7-alpine}
+    container_name: scenic-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - "${REDIS_HOST_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  # ---------- 后端 Spring Boot ----------
+  backend:
+    build:
+      context: ./houduana
+      dockerfile: Dockerfile
+      args:
+        MAVEN_IMAGE: ${MAVEN_IMAGE:-maven:3.9.9-eclipse-temurin-21}
+        JRE_IMAGE: ${JRE_IMAGE:-eclipse-temurin:21-jre}
+    container_name: scenic-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SERVER_PORT: 8083
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: digital_ticket
+      MYSQL_USERNAME: scenic
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-REDACTED}
+      JWT_SECRET: ${JWT_SECRET:-REDACTED}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      QWEATHER_KEY: ${QWEATHER_KEY:-}
+      TZ: Asia/Shanghai
+    ports:
+      - "${BACKEND_HOST_PORT:-8083}:8083"
+
+  # ---------- Nginx（两个前端 + 反向代理） ----------
+  nginx:
+    build:
+      context: .
+      dockerfile: deploy/nginx/Dockerfile
+      args:
+        NGINX_IMAGE: ${NGINX_IMAGE:-nginx:1.27-alpine}
+    container_name: scenic-nginx
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+      - "${ADMIN_HOST_PORT:-8081}:8081"
+
+volumes:
+  mysql_data:
+  redis_data:

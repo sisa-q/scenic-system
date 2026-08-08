@@ -1,0 +1,13 @@
+# 缩小 Nginx 构建上下文：只保留部署所需文件
+**/.git
+**/.idea
+**/target
+**/node_modules
+nodejs
+tools
+web/node_modules
+admin/node_modules
+web/src
+admin/src
+houduana/src
+*.md

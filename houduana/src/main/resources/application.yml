@@ -1,0 +1,52 @@
+server:
+  port: 8083
+
+spring:
+  # ====== 数据源配置 ======
+  datasource:
+    url: jdbc:mysql://localhost:3306/digital_ticket?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+    username: root
+    password: REDACTED
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # ====== JPA 配置 ======
+  jpa:
+    hibernate:
+      ddl-auto: update          # ✅ 已改回 update，保留现有数据，只更新表结构
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+
+  # ====== Redis 配置（高并发抢票分布式锁 / 热点缓存） ======
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 2
+
+  # ====== Jackson 日期格式配置 ======
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+
+# ====== JWT 配置 ======
+jwt:
+  secret: REDACTED
+  expire: 86400000
+
+# ====== 日志配置 ======
+logging:
+  level:
+    com.scenic: debug
+    org.springframework.web: debug
+
+# ====== 天气服务配置 ======
+weather:
+  qweather-key: ${QWEATHER_KEY:}
