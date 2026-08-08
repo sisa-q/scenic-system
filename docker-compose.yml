@@ -77,6 +77,14 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       QWEATHER_KEY: ${QWEATHER_KEY:-}
+      PAY_ENABLED: ${PAY_ENABLED:-false}
+      PAY_CHANNEL: ${PAY_CHANNEL:-mock}
+      PAY_APP_ID: ${PAY_APP_ID:-}
+      PAY_PRIVATE_KEY: ${PAY_PRIVATE_KEY:-}
+      PAY_PUBLIC_KEY: ${PAY_PUBLIC_KEY:-}
+      PAY_SERVER_URL: ${PAY_SERVER_URL:-https://openapi.alipaydev.com/gateway.do}
+      PAY_NOTIFY_URL: ${PAY_NOTIFY_URL:-}
+      PAY_RETURN_URL: ${PAY_RETURN_URL:-}
       TZ: Asia/Shanghai
     ports:
       - "${BACKEND_HOST_PORT:-8083}:8083"

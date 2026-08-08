@@ -16,6 +16,11 @@ export function payOrder(id) {
     return request.post(`/order/pay/${id}`)
 }
 
+// 模拟支付确认（开发/演示：走与真实回调相同的幂等确认逻辑）
+export function mockConfirmPay(id) {
+    return request.post(`/pay/mock/confirm/${id}`)
+}
+
 // 游客端申请退款：仅提交申请，等待管理员审核（绝不自动退款）
 export function applyRefund(id) {
     return request.post(`/order/refund-apply/${id}`)

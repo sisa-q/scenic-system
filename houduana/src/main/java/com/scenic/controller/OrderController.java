@@ -2,6 +2,7 @@ package com.scenic.controller;
 
 import com.scenic.entity.Order;
 import com.scenic.service.OrderService;
+import com.scenic.service.PayService;
 import com.scenic.util.JwtUtil;
 import com.scenic.vo.Result;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,9 @@ public class OrderController {
 
     @Autowired
     private OrderService orderService;
+
+    @Autowired
+    private PayService payService;
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -85,8 +89,8 @@ public class OrderController {
     public Result pay(@PathVariable Long id,
                       @RequestHeader(value = "Authorization", required = false) String authHeader) {
         try {
-            orderService.payOrder(id, parseUserId(authHeader), parseRole(authHeader));
-            return Result.success("支付成功");
+            // 发起支付：返回收银台参数（mock=模拟，alipay=跳转支付宝）
+            return Result.success(payService.createPayment(id, parseUserId(authHeader), parseRole(authHeader)));
         } catch (RuntimeException e) {
             return Result.error(e.getMessage());
         }

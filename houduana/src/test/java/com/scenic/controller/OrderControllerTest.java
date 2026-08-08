@@ -2,7 +2,9 @@ package com.scenic.controller;
 
 import com.scenic.entity.Order;
 import com.scenic.service.OrderService;
+import com.scenic.service.PayService;
 import com.scenic.util.JwtUtil;
+import com.scenic.vo.PayResult;
 import com.scenic.vo.Result;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,6 +28,7 @@ import static org.mockito.Mockito.when;
 class OrderControllerTest {
 
     @Mock private OrderService orderService;
+    @Mock private PayService payService;
     @Mock private JwtUtil jwtUtil;
     @InjectMocks private OrderController orderController;
 
@@ -73,10 +76,11 @@ class OrderControllerTest {
 
     @Test
     void pay_ok() {
+        when(payService.createPayment(1L, null, "user")).thenReturn(new PayResult());
+
         Result r = orderController.pay(1L, null);
 
         assertThat(r.getCode()).isEqualTo(200);
-        assertThat(r.getData()).isEqualTo("支付成功");
     }
 
     @Test

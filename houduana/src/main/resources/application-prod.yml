@@ -46,6 +46,17 @@ jwt:
   secret: ${JWT_SECRET:REDACTED}
   expire: 86400000
 
+# ====== 支付配置（默认模拟；配置支付宝沙箱后启用） ======
+pay:
+  enabled: ${PAY_ENABLED:false}
+  channel: ${PAY_CHANNEL:mock}
+  app-id: ${PAY_APP_ID:}
+  private-key: ${PAY_PRIVATE_KEY:}
+  alipay-public-key: ${PAY_PUBLIC_KEY:}
+  server-url: ${PAY_SERVER_URL:https://openapi.alipaydev.com/gateway.do}
+  notify-url: ${PAY_NOTIFY_URL:}
+  return-url: ${PAY_RETURN_URL:}
+
 # ====== 日志配置 ======
 logging:
   level:

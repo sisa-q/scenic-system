@@ -9,6 +9,8 @@ import com.scenic.repository.TimeSlotRepository;
 import com.scenic.repository.TicketPolicyRepository;
 import com.scenic.repository.ScenicSpotRepository;
 import com.scenic.service.OrderService;
+import com.scenic.service.PayService;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.domain.Page;
@@ -43,6 +45,10 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private ScenicSpotRepository scenicSpotRepository;
+
+    @Autowired(required = false)
+    @Lazy
+    private PayService payService;
 
     @Autowired(required = false)
     private StringRedisTemplate redisTemplate;
@@ -316,6 +322,10 @@ public class OrderServiceImpl implements OrderService {
         }
         if (order.getStatus() != 1 && order.getStatus() != 5) {
             throw new RuntimeException("仅已支付或退款申请中的订单可退款");
+        }
+        // 真实支付渠道：原路退款（模拟渠道直接放行）
+        if (payService != null) {
+            payService.refund(order);
         }
         order.setStatus(3);
         order.setRefundTime(new Date());
