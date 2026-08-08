@@ -207,8 +207,11 @@
             await this.fetchSpot(id)
             await this.fetchSlots(id)
 
-            // 每次进入故宫详情页都展示宣传片弹窗
-            this.showVideoDialog = true
+            // 仅从首页点击“故宫”图标进入时展示宣传片弹窗，且同一会话只展示一次（返回购票页不再反复弹）
+            if (this.$route.query.v === '1' && !sessionStorage.getItem('gugong_video_shown')) {
+                sessionStorage.setItem('gugong_video_shown', '1')
+                this.showVideoDialog = true
+            }
 
             // 背景轮播
             this.bgTimer = setInterval(() => {
@@ -269,6 +272,7 @@
                     path: '/order-confirm',
                     query: {
                         slotId: slot.id,
+                        spotId: this.spot.id,
                         price: price,
                         policyName: slot.policyName || '故宫门票',
                         spotName: this.spot.name || '故宫博物院',

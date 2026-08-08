@@ -130,6 +130,7 @@
                     path: '/order-confirm',
                     query: {
                         slotId: slot.id,
+                        spotId: this.spot.id,
                         price: group.price,
                         policyName: group.policyName,
                         spotName: this.spot.name,

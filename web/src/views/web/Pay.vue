@@ -30,6 +30,7 @@
         data() {
             return {
                 orderId: '',
+                spotId: '',
                 orderNo: '',
                 amountText: '0.00',
                 type: '',        // mock | alipay
@@ -39,6 +40,7 @@
         },
         mounted() {
             this.orderId = this.$route.query.orderId
+            this.spotId = this.$route.query.spotId || ''
             if (this.orderId) {
                 this.fetchOrder()
             } else {
@@ -87,7 +89,11 @@
                 }
             },
             cancel() {
-                this.$router.back()
+                if (this.spotId) {
+                    this.$router.replace('/spot/' + this.spotId)
+                } else {
+                    this.$router.back()
+                }
             }
         }
     }

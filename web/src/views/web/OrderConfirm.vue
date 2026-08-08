@@ -19,6 +19,7 @@
         </div>
 
         <div style="padding: 16px;">
+            <van-button plain block style="margin-bottom:10px;" @click="goBack">返回</van-button>
             <van-button type="danger" block round @click="submitOrder">提交订单</van-button>
         </div>
     </div>
@@ -35,6 +36,7 @@
         data() {
             return {
                 slotId: '',
+                spotId: '',
                 spotName: '',
                 policyName: '',
                 price: 0,
@@ -51,6 +53,7 @@
         },
         mounted() {
             this.slotId = this.$route.query.slotId
+            this.spotId = this.$route.query.spotId || ''
             if (!this.slotId) {
                 showToast('参数错误')
                 this.$router.back()
@@ -89,6 +92,13 @@
                     showToast('获取时段信息失败')
                 }
             },
+            goBack() {
+                if (this.spotId) {
+                    this.$router.replace('/spot/' + this.spotId)
+                } else {
+                    this.$router.back()
+                }
+            },
             async submitOrder() {
                 if (this.remaining <= 0) {
                     showToast('该时段已售罄')
@@ -104,7 +114,7 @@
                         quantity: this.quantity
                     })
                     showToast('下单成功')
-                    this.$router.push({ path: '/pay', query: { orderId: res.data.id } })
+                    this.$router.push({ path: '/pay', query: { orderId: res.data.id, spotId: this.spotId } })
                 } catch (e) {
                     showToast(e.msg || '下单失败')
                 }

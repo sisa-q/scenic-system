@@ -639,7 +639,9 @@
                     if (card) {
                         const spotId = card.userData.spotId
                         this.selectedName = card.userData.label || card.userData.name
-                        this.$router.push(`/spot/${spotId}`)
+                        this.$router.push(spotId === 1
+                            ? { path: '/spot/1', query: { v: '1' } }
+                            : `/spot/${spotId}`)
                     }
                 }
 
