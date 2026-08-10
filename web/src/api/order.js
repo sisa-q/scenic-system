@@ -16,6 +16,11 @@ export function payOrder(id) {
     return request.post(`/order/pay/${id}`)
 }
 
+// 支付宝同步跳转确认（return_url 兜底：验签 + 主动查询交易状态）
+export function alipayReturn(params) {
+    return request.get(`/pay/return/alipay`, { params })
+}
+
 // 模拟支付确认（开发/演示：走与真实回调相同的幂等确认逻辑）
 export function mockConfirmPay(id) {
     return request.post(`/pay/mock/confirm/${id}`)

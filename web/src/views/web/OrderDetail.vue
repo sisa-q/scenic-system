@@ -1,4 +1,4 @@
-﻿<template>
+<template>
     <div class="order-detail-page">
         <!-- 订单信息卡片 -->
         <div class="order-card">
@@ -138,8 +138,8 @@
                 refunding: false,
                 cancelingRefund: false,
                 isEditMode: false,
-                // 待支付倒计时（限时 2 分钟）
-                remainSeconds: 120,
+                // 待支付倒计时（限时 30 分钟，与后端 pay.pay-timeout-minutes 一致）
+                remainSeconds: 30 * 60,
                 countdownTimer: null
             }
         },
@@ -312,7 +312,7 @@
                 if (!createTime) return
                 const created = new Date(String(createTime).replace(/-/g, '/')).getTime()
                 if (isNaN(created)) return
-                const deadline = created + 2 * 60 * 1000
+                const deadline = created + 30 * 60 * 1000
                 const update = () => {
                     const remain = Math.max(0, Math.floor((deadline - Date.now()) / 1000))
                     this.remainSeconds = remain

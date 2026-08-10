@@ -11,6 +11,7 @@ import com.scenic.repository.ScenicSpotRepository;
 import com.scenic.service.OrderService;
 import com.scenic.service.PayService;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.domain.Page;
@@ -55,8 +56,9 @@ public class OrderServiceImpl implements OrderService {
 
     private final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    /** 待支付订单支付限时（分钟） */
-    private static final long PAY_TIMEOUT_MINUTES = 2;
+    /** 待支付订单支付限时（分钟），可通过 pay.pay-timeout-minutes 配置（默认 30，真实支付宝支付留足时间） */
+    @Value("${pay.pay-timeout-minutes:30}")
+    private long payTimeoutMinutes = 30;
 
     @Override
     public List<Order> listOrders(Integer status, String key, Long userId, String role) {
@@ -368,7 +370,7 @@ public class OrderServiceImpl implements OrderService {
     public int expirePendingOrders() {
         // 待支付订单超过支付限时（2 分钟）未支付自动过期
         java.util.Calendar cal = java.util.Calendar.getInstance();
-        cal.add(java.util.Calendar.MINUTE, -(int) PAY_TIMEOUT_MINUTES);
+        cal.add(java.util.Calendar.MINUTE, -(int) payTimeoutMinutes);
         java.util.Date deadline = cal.getTime();
         List<Order> pending = orderRepository.findByStatus(0);
         int count = 0;
@@ -423,7 +425,7 @@ public class OrderServiceImpl implements OrderService {
     private boolean isPendingExpired(Order order) {
         if (order == null || order.getStatus() == null || order.getStatus() != 0) return false;
         if (order.getCreateTime() == null) return false;
-        long timeoutMs = PAY_TIMEOUT_MINUTES * 60 * 1000;
+        long timeoutMs = payTimeoutMinutes * 60 * 1000;
         return System.currentTimeMillis() - order.getCreateTime().getTime() >= timeoutMs;
     }
 

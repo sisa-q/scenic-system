@@ -48,9 +48,10 @@ pay:
   app-id: ${PAY_APP_ID:}
   private-key: ${PAY_PRIVATE_KEY:}
   alipay-public-key: ${PAY_PUBLIC_KEY:}
-  server-url: ${PAY_SERVER_URL:https://openapi.alipaydev.com/gateway.do}
+  server-url: ${PAY_SERVER_URL:https://openapi-sandbox.dl.alipaydev.com/gateway.do}
   notify-url: ${PAY_NOTIFY_URL:}
   return-url: ${PAY_RETURN_URL:}
+  pay-timeout-minutes: ${PAY_TIMEOUT_MINUTES:30}
 
 # ====== 日志配置 ======
 logging:

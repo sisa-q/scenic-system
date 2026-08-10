@@ -39,7 +39,8 @@ public class WebConfig implements WebMvcConfigurer {
                         "/api/weather/**",               // 公告详情（含通配符）
 
                         // ====== 支付回调（验签在服务层，无需登录） ======
-                        "/api/pay/notify/**"             // 支付宝异步回调
+                        "/api/pay/notify/**",             // 支付宝异步回调
+                        "/api/pay/return/**"              // 支付宝同步跳转（return_url 兜底确认）
                 );
     }
 }

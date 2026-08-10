@@ -2,7 +2,7 @@
     <div class="pay-page">
         <div class="pay-card">
             <div class="pay-title">订单支付</div>
-            <div class="pay-row"><span>订单号</span><span>{{ orderNo }}</span></div>
+            <div class="pay-row"><span>订单号</span><span>{{ orderNo || (returning ? '确认中…' : '') }}</span></div>
             <div class="pay-row"><span>应付金额</span><span class="amount">¥{{ amountText }}</span></div>
 
             <template v-if="type === 'alipay'">
@@ -22,7 +22,7 @@
 </template>
 
 <script>
-    import { payOrder, mockConfirmPay, getOrderDetail } from '@/api/order'
+    import { payOrder, mockConfirmPay, alipayReturn, getOrderDetail } from '@/api/order'
     import { showToast } from 'vant'
 
     export default {
@@ -35,12 +35,20 @@
                 amountText: '0.00',
                 type: '',        // mock | alipay
                 redirectUrl: '',
-                paying: false
+                paying: false,
+                returning: false // 正在确认支付宝跳回结果
             }
         },
         mounted() {
-            this.orderId = this.$route.query.orderId
-            this.spotId = this.$route.query.spotId || ''
+            const q = this.$route.query
+            this.orderId = q.orderId
+            this.spotId = q.spotId || ''
+            // 从支付宝收银台跳回（return_url 携带 out_trade_no/sign 等参数）：主动验签+查单兜底确认
+            if (q.out_trade_no) {
+                this.returning = true
+                this.confirmReturn(q)
+                return
+            }
             if (this.orderId) {
                 this.fetchOrder()
             } else {
@@ -56,6 +64,24 @@
                     this.amountText = Number(res.data.totalAmount || 0).toFixed(2)
                 } catch (e) {
                     showToast('获取订单信息失败')
+                }
+            },
+            // 支付宝同步跳转兜底确认：后端验签 + alipay.trade.query 权威查单
+            async confirmReturn(q) {
+                this.paying = true
+                try {
+                    const res = await alipayReturn(q)
+                    showToast('支付成功')
+                    this.$router.replace({ path: '/orders', query: { refreshed: Date.now() } })
+                } catch (e) {
+                    // 验签失败/尚未支付成功/异步回调未到达：回到支付页，可重新发起或稍后查看订单
+                    showToast(e.msg || e.message || '支付结果确认中，请稍后在订单列表查看')
+                    this.returning = false
+                    if (this.orderId) {
+                        this.fetchOrder()
+                    }
+                } finally {
+                    this.paying = false
                 }
             },
             async pay() {

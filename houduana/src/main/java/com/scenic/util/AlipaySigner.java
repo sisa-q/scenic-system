@@ -88,9 +88,30 @@ public class AlipaySigner {
         params.put("timestamp", LocalDateTime.now().format(TS));
         params.put("version", "1.0");
         if (props.getNotifyUrl() != null && !props.getNotifyUrl().isBlank()) params.put("notify_url", props.getNotifyUrl());
-        if (props.getReturnUrl() != null && !props.getReturnUrl().isBlank()) params.put("return_url", props.getReturnUrl());
+        if (props.getReturnUrl() != null && !props.getReturnUrl().isBlank()) {
+            // 同步跳转带上 orderId，方便前端在支付宝跳回后仍能定位订单
+            String returnUrl = props.getReturnUrl();
+            returnUrl += (returnUrl.contains("?") ? "&" : "?") + "orderId=" + order.getId();
+            params.put("return_url", returnUrl);
+        }
         params.put("biz_content", objectMapper.writeValueAsString(biz));
         return props.getServerUrl() + "?" + buildSignedQuery(params, props.getPrivateKey());
+    }
+
+    /** 主动查询支付宝交易状态（alipay.trade.query），用于同步跳转兜底确认 */
+    public String queryTrade(String outTradeNo, PayProperties props) throws Exception {
+        Map<String, Object> biz = new LinkedHashMap<>();
+        biz.put("out_trade_no", outTradeNo);
+        Map<String, String> params = new LinkedHashMap<>();
+        params.put("app_id", props.getAppId());
+        params.put("method", "alipay.trade.query");
+        params.put("format", "JSON");
+        params.put("charset", CHARSET);
+        params.put("sign_type", SIGN_TYPE);
+        params.put("timestamp", LocalDateTime.now().format(TS));
+        params.put("version", "1.0");
+        params.put("biz_content", objectMapper.writeValueAsString(biz));
+        return callApi(params, props);
     }
 
     public String callApi(Map<String, String> params, PayProperties props) throws Exception {
@@ -104,6 +125,11 @@ public class AlipaySigner {
                 .send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8)).body();
     }
 
+    /**
+     * 生成带签名的查询串。
+     * 注意：sign_type 是支付宝网关的必填公共参数，必须出现在实际请求中；
+     * 仅 sign（待计算的签名值）不参与输出，最后单独追加。
+     */
     private String buildSignedQuery(Map<String, String> params, String privateKey) throws Exception {
         String content = buildContent(params);
         String sign = sign(content, privateKey);
@@ -111,7 +137,7 @@ public class AlipaySigner {
         Collections.sort(keys);
         StringBuilder sb = new StringBuilder();
         for (String k : keys) {
-            if ("sign".equals(k) || "sign_type".equals(k)) continue;
+            if ("sign".equals(k)) continue;
             String v = params.get(k);
             if (v == null || v.isEmpty()) continue;
             if (sb.length() > 0) sb.append("&");
