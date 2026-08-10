@@ -1,0 +1,14 @@
+{
+  "name": "智慧景区全息导览",
+  "short_name": "智慧景区",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0e27",
+  "theme_color": "#0a0e27",
+  "description": "数字化文旅景区票务与游客流量监测系统",
+  "icons": [
+    { "src": "/img/icons/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/img/icons/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/img/icons/android-chrome-maskable-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
