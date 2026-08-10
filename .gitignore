@@ -33,3 +33,6 @@ scenic-android/unpackage/
 # ===== 系统文件 =====
 Thumbs.db
 .DS_Store
+
+# ===== 本地敏感配置（支付宝沙箱密钥等） =====
+application-local.yml

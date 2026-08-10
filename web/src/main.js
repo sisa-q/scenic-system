@@ -10,6 +10,7 @@ import 'vant/lib/index.css'
 // ====== 全局样式 ======
 import './assets/styles/global.scss'
 import './assets/styles/vant-fix.scss'
+import './registerServiceWorker'
 
 const app = createApp(App)
 app.use(Vant)
