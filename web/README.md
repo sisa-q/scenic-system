@@ -1,16 +1,26 @@
-# 智慧景区 - 游客端（独立前端）
+# 游客端前端（web）
 
-独立于管理端的游客端工程，拥有自己的登录页。
+> 智慧景区 · 游客端 H5 / PWA —— Vue 3 + Vant 4 + Three.js
+
+## 技术栈
+Vue 3 · Vant 4 · Pinia · Vue Router 4 · Axios · Three.js 0.185 · Vue CLI 5 · PWA(Workbox)
+
+## 功能页面
+- `/home` 3D 地球全息导览（8K 地球 + 全球景点标注 + 天气面板/预警）
+- `/spot/:id` 景点详情（默认版 / 故宫专属版）
+- `/order-confirm` 确认订单（选票种/时段/数量）
+- `/pay` 支付（支付宝沙箱跳转 / mock 降级）
+- `/orders`、`/order/:id` 订单列表与详情（核销码/退款/评价）
+- `/evaluation-submit` 发表评价 · `/notices`、`/notice/:id` 公告
+- `/login`、`/user`、`/profile` 登录/个人中心/资料
 
 ## 运行
-
 ```bash
-npm run serve   # 开发模式（默认端口 8080，/api 代理到后端 http://localhost:8083）
-npm run build   # 生产构建（输出 dist/）
+npm install
+npm run serve   # 8080，/api 与 /ws 代理到后端 8083
+npm run build   # 产出 dist（含 PWA service-worker.js + manifest）
 ```
 
-## 说明
-
-- 登录：仅允许游客账号登录本端；管理员账号会被拒绝，提示到管理端（http://localhost:8081）登录。
-- 依赖：当前 node_modules 是链接到 `D:\bishe\admin\node_modules` 的目录链接（Junction），
-  目的是离线复用依赖、免去重复安装；如需完全独立安装，删除该链接后执行 `npm install` 即可。
+## PWA
+- 已接入 Workbox：静态资源预缓存 / 图片 CacheFirst / 读接口 NetworkFirst / 写接口不缓存
+- 构建后 `dist/` 可直接由 Nginx / 任意静态服务器托管
