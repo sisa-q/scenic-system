@@ -26,7 +26,7 @@
         methods: {
             async fetchList() {
                 const res = await getNoticeList()
-                this.list = res.data || []
+                this.list = (res.data || []).slice().sort((a, b) => (b.id || 0) - (a.id || 0))
             },
             goDetail(id) {
                 this.$router.push(`/notice/${id}`)

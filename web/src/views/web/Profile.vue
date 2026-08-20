@@ -91,7 +91,7 @@
 <style scoped>
     .profile {
         min-height: 100vh;
-        background: #f7f8fa;
+        background: transparent;
         padding-top: 16px;
     }
 </style>

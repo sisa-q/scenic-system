@@ -148,7 +148,7 @@
 <style scoped>
     .default-detail {
         padding-bottom: 60px;
-        background: #f7f8fa;
+        background: transparent;
         min-height: 100vh;
     }
     .spot-header {

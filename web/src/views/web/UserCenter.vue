@@ -125,6 +125,6 @@
     .user-center {
         padding-bottom: 60px;
         min-height: 100vh;
-        background: #f7f8fa;
+        background: transparent;
     }
 </style>

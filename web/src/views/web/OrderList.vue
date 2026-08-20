@@ -118,7 +118,7 @@
                 const status = this.activeStatus === -1 ? undefined : this.activeStatus
                 try {
                     const res = await getOrderList({ status }, { silent })
-                    this.list = res.data || []
+                    this.list = (res.data || []).slice().sort((a, b) => (b.id || 0) - (a.id || 0))
                     // 静默轮询不清空勾选，避免影响批量隐藏操作
                     if (!silent) {
                         this.selectedIds = []
@@ -223,7 +223,7 @@
     .order-list {
         padding-bottom: 60px;
         min-height: 100vh;
-        background: #f7f8fa;
+        background: transparent;
     }
 
     .order-header {

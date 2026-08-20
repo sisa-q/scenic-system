@@ -126,7 +126,7 @@
 <style scoped>
     .order-confirm {
         padding: 16px;
-        background: #f7f8fa;
+        background: transparent;
         min-height: 100vh;
     }
     .tips {

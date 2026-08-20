@@ -116,13 +116,13 @@ body {
 }
 
 /* Vant 卡片/单元格：浅色改深色玻璃 */
+/* ---- Vant 卡片/单元格：白色列表（与管理端一致），深色页面背景 ---- */
 .van-card, .van-cell, .van-cell-group {
-  background: rgba(16, 28, 56, 0.66) !important;
-  color: var(--gg-text) !important;
+  background: #ffffff !important;
+  color: #2b3a55 !important;
 }
-.van-cell__title, .van-cell__value, .van-cell-group__title {
-  color: var(--gg-text-2) !important;
-}
+  .van-cell__title { color: #2b3a55 !important; }
+  .van-cell__value, .van-cell-group__title { color: #6b7a94 !important; }
 .van-cell::after { border-color: rgba(120, 170, 255, 0.10) !important; }
 
 /* 主按钮/品牌色 */
@@ -140,3 +140,11 @@ body {
 /* 页面统一过渡 */
 .page-fade-enter-active, .page-fade-leave-active { transition: opacity .2s; }
 .page-fade-enter-from, .page-fade-leave-to { opacity: 0; }
+
+/* ---- 导航栏 / 底部栏：深色科幻（管理端同风格） ---- */
+.van-nav-bar { background: rgba(10, 16, 34, 0.92) !important; border-bottom: 1px solid rgba(120,170,255,0.12); }
+.van-nav-bar__title, .van-nav-bar .van-icon, .van-nav-bar__text { color: #e8eefc !important; }
+.van-tabbar { background: rgba(10, 16, 34, 0.94) !important; border-top: 1px solid rgba(120,170,255,0.12); }
+.van-tabbar-item { color: #7d8db0 !important; }
+.van-tabbar-item--active { color: #4da3ff !important; }
+.van-tabbar-item--active .van-icon { color: #4da3ff !important; }
