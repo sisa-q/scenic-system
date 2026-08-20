@@ -136,4 +136,16 @@ class PayServiceImplTest {
         assertThat(r.getType()).isEqualTo("mock");
         verify(orderService).payOrder(1L, 100L, "user");
     }
+
+    @Test
+    @DisplayName("兼容：不传 mode 且 channel=alipay 时返回支付宝沙箱链接（旧前端不传 mode 也能用）")
+    void createPayment_noMode_fallsBackToAlipay() {
+        when(payProperties.isEnabled()).thenReturn(true);
+        when(payProperties.getChannel()).thenReturn("alipay");
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        PayResult r = payService.createPayment(1L, 100L, "user", null);
+
+        assertThat(r.getType()).isEqualTo("alipay");
+    }
 }

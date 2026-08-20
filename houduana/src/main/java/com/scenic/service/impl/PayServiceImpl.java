@@ -73,7 +73,9 @@ public class PayServiceImpl implements PayService {
         r.setOrderNo(order.getOrderNo());
         r.setAmount(order.getTotalAmount());
         // 两个模式独立：mode=alipay 走支付宝沙箱（生成收银台链接），其余（含空）走模拟支付
-        boolean wantAlipay = "alipay".equalsIgnoreCase(mode);
+        // mode=alipay 走支付宝沙箱；mode=mock 走模拟支付；mode 为空时兼容原配置行为（channel=alipay 走沙箱）
+        boolean wantAlipay = "alipay".equalsIgnoreCase(mode)
+                || (mode == null && realAlipay());
         if (wantAlipay && alipaySigner != null && payProperties != null) {
             try {
                 r.setRedirectUrl(alipaySigner.buildPagePayUrl(order, payProperties));
