@@ -11,7 +11,13 @@ module.exports = defineConfig({
         target: 'http://localhost:8083',   // 后端 Spring Boot 端口
         changeOrigin: true
       },
-      '/ws': {
+      // 只代理应用自身的 WS 端点；不代理 /ws 本身，避免与 webpack HMR 的 /ws 冲突（Invalid frame header）
+      '/ws/flow': {
+        target: 'http://localhost:8083',
+        changeOrigin: true,
+        ws: true
+      },
+      '/ws/weather': {
         target: 'http://localhost:8083',
         changeOrigin: true,
         ws: true
