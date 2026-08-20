@@ -118,8 +118,7 @@ public class PayServiceImpl implements PayService {
         if (realAlipay() && alipaySigner != null && payProperties != null) {
             try {
                 String resp = alipaySigner.queryTrade(outTradeNo, payProperties);
-                JsonNode root = objectMapper.readTree(resp);
-                JsonNode respNode = root.path("alipay_trade_query_response");
+                JsonNode respNode = alipaySigner.parseResponse(resp, payProperties);
                 if (!"10000".equals(respNode.path("code").asText())) {
                     throw new RuntimeException("查询支付宝交易失败：" + respNode.path("sub_msg").asText());
                 }
@@ -184,10 +183,9 @@ public class PayServiceImpl implements PayService {
             params.put("sign_type", "RSA2");
             params.put("timestamp", LocalDateTime.now().format(TS));
             params.put("version", "1.0");
-            params.put("biz_content", objectMapper.writeValueAsString(biz));
+            alipaySigner.applyEncryption(params, objectMapper.writeValueAsString(biz), payProperties);
             String resp = alipaySigner.callApi(params, payProperties);
-            JsonNode root = objectMapper.readTree(resp);
-            JsonNode respNode = root.path("alipay_trade_refund_response");
+            JsonNode respNode = alipaySigner.parseResponse(resp, payProperties);
             if (!"10000".equals(respNode.path("code").asText())) {
                 throw new RuntimeException("退款失败：" + respNode.path("msg").asText() + " " + respNode.path("sub_msg").asText());
             }

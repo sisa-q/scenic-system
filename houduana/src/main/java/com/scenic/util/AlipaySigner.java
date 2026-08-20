@@ -1,10 +1,16 @@
 package com.scenic.util;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scenic.config.PayProperties;
 import com.scenic.entity.Order;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -22,13 +28,28 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-/** 支付宝 RSA2 签名/验签（自研，零外部依赖；沙箱网关 HTTP 调用） */
+/** 支付 RSA2 签名/验签 + 接口内容 AES 加密（自研，零外部依赖；沙箱网关 HTTP 调用） */
 @Component
 public class AlipaySigner {
+
+    private static final Logger log = LoggerFactory.getLogger(AlipaySigner.class);
 
     private static final String SIGN_TYPE = "RSA2";
     private static final String CHARSET = "utf-8";
     private static final DateTimeFormatter TS = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    /** 接口内容加密：AES/CBC/PKCS5Padding，密钥为 Base64 解码后的字节，IV 为 16 个 0 */
+    private static final String AES_CBC_PCK_ALG = "AES/CBC/PKCS5Padding";
+    private static final byte[] AES_IV = new byte[16];
+
+    /** 同步响应中可能出现的响应字段名 */
+    private static final String[] RESPONSE_FIELDS = {
+            "alipay_trade_query_response",
+            "alipay_trade_refund_response",
+            "alipay_trade_page_pay_response",
+            "response"
+    };
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public String sign(String content, String privateKey) throws Exception {
@@ -73,6 +94,72 @@ public class AlipaySigner {
         return verify(buildContent(params), sign, alipayPublicKey);
     }
 
+    /** 支付宝接口内容加密：AES 加密（AES/CBC/PKCS5Padding，IV 全 0，输出 Base64） */
+    public String aesEncrypt(String plainText, String key) throws Exception {
+        Cipher cipher = Cipher.getInstance(AES_CBC_PCK_ALG);
+        SecretKeySpec keySpec = new SecretKeySpec(Base64.getDecoder().decode(key.trim()), "AES");
+        cipher.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(AES_IV));
+        byte[] encrypted = cipher.doFinal(plainText.getBytes(StandardCharsets.UTF_8));
+        return Base64.getEncoder().encodeToString(encrypted);
+    }
+
+    /** 支付宝接口内容加密：AES 解密 */
+    public String aesDecrypt(String cipherText, String key) throws Exception {
+        Cipher cipher = Cipher.getInstance(AES_CBC_PCK_ALG);
+        SecretKeySpec keySpec = new SecretKeySpec(Base64.getDecoder().decode(key.trim()), "AES");
+        cipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(AES_IV));
+        byte[] decrypted = cipher.doFinal(Base64.getDecoder().decode(cipherText));
+        return new String(decrypted, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * 应用开启“接口内容加密”时（配置了 encrypt-key）：
+     * 1) 将 biz_content 明文 JSON 加密为 AES 密文；
+     * 2) 追加公共参数 encrypt_type=AES（参与签名）。
+     * 加密前后均打印，便于与支付宝网关返回的验签串核对。
+     * 未配置密钥时保持明文（兼容未开启加密的应用）。
+     */
+    public void applyEncryption(Map<String, String> params, String plainBizContent, PayProperties props) throws Exception {
+        if (props == null || props.getEncryptKey() == null || props.getEncryptKey().isBlank()) {
+            params.put("biz_content", plainBizContent);
+            return;
+        }
+        String encrypted = aesEncrypt(plainBizContent, props.getEncryptKey());
+        log.info("[Pay] biz_content plaintext = {}", plainBizContent);
+        log.info("[Pay] biz_content encrypted = {}", encrypted);
+        params.put("biz_content", encrypted);
+        params.put("encrypt_type", "AES");
+    }
+
+    /**
+     * 解析支付宝同步响应 JSON：
+     * - 开启接口内容加密时，响应中的 XXX_response 为 AES 密文字符串，
+     *   需先对 “密文”（含双引号）做 RSA2 验签，再 AES 解密得到明文 JSON；
+     * - 未加密时直接返回响应节点（保持原逻辑）。
+     */
+    public JsonNode parseResponse(String resp, PayProperties props) throws Exception {
+        JsonNode root = objectMapper.readTree(resp);
+        String sign = root.path("sign").asText(null);
+        for (String field : RESPONSE_FIELDS) {
+            JsonNode node = root.get(field);
+            if (node == null) continue;
+            boolean encrypted = node.isTextual()
+                    && props != null && props.getEncryptKey() != null && !props.getEncryptKey().isBlank();
+            if (encrypted) {
+                String cipher = node.asText();
+                // 加密响应验签原文为带双引号的密文
+                if (sign != null && !verify("\"" + cipher + "\"", sign, props.getAlipayPublicKey())) {
+                    throw new RuntimeException("支付宝响应验签失败（加密响应）");
+                }
+                String plain = aesDecrypt(cipher, props.getEncryptKey());
+                log.info("[Pay] response decrypted: {}", plain);
+                return objectMapper.readTree(plain);
+            }
+            return node;
+        }
+        return root;
+    }
+
     public String buildPagePayUrl(Order order, PayProperties props) throws Exception {
         Map<String, Object> biz = new LinkedHashMap<>();
         biz.put("out_trade_no", order.getOrderNo());
@@ -94,8 +181,10 @@ public class AlipaySigner {
             returnUrl += (returnUrl.contains("?") ? "&" : "?") + "orderId=" + order.getId();
             params.put("return_url", returnUrl);
         }
-        params.put("biz_content", objectMapper.writeValueAsString(biz));
-        return props.getServerUrl() + "?" + buildSignedQuery(params, props.getPrivateKey());
+        applyEncryption(params, objectMapper.writeValueAsString(biz), props);
+        String url = props.getServerUrl() + "?" + buildSignedQuery(params, props.getPrivateKey());
+        log.info("[Pay] page.pay redirect url: {}", url);
+        return url;
     }
 
     /** 主动查询支付宝交易状态（alipay.trade.query），用于同步跳转兜底确认 */
@@ -110,7 +199,7 @@ public class AlipaySigner {
         params.put("sign_type", SIGN_TYPE);
         params.put("timestamp", LocalDateTime.now().format(TS));
         params.put("version", "1.0");
-        params.put("biz_content", objectMapper.writeValueAsString(biz));
+        applyEncryption(params, objectMapper.writeValueAsString(biz), props);
         return callApi(params, props);
     }
 
@@ -128,11 +217,12 @@ public class AlipaySigner {
     /**
      * 生成带签名的查询串。
      * 注意：sign_type 是支付宝网关的必填公共参数，必须出现在实际请求中；
-     * 仅 sign（待计算的签名值）不参与输出，最后单独追加。
+     * 而 sign（待计算的签名值）不参与输出，最后单独追加。
      */
     private String buildSignedQuery(Map<String, String> params, String privateKey) throws Exception {
         String content = buildContent(params);
         String sign = sign(content, privateKey);
+        log.info("[Pay] sign content: {}", content);
         List<String> keys = new ArrayList<>(params.keySet());
         Collections.sort(keys);
         StringBuilder sb = new StringBuilder();

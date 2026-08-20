@@ -36,6 +36,10 @@ public class PayProperties {
     @Value("${pay.return-url:}")
     private String returnUrl;
 
+    /** 接口内容加密 AES 密钥（支付宝开放平台“接口内容加密方式”生成，Base64） */
+    @Value("${pay.encrypt-key:}")
+    private String encryptKey;
+
     public boolean isEnabled() { return enabled; }
     public void setEnabled(boolean enabled) { this.enabled = enabled; }
     public String getChannel() { return channel; }
@@ -52,10 +56,13 @@ public class PayProperties {
     public void setNotifyUrl(String notifyUrl) { this.notifyUrl = notifyUrl; }
     public String getReturnUrl() { return returnUrl; }
     public void setReturnUrl(String returnUrl) { this.returnUrl = returnUrl; }
+    public String getEncryptKey() { return encryptKey; }
+    public void setEncryptKey(String encryptKey) { this.encryptKey = encryptKey; }
 
-    /** 启动时打印当前支付通道，便于排查"为什么还是模拟支付" */
+    /** 启动时打印当前支付通道，便于排查为什么还是模拟支付 */
     @PostConstruct
     public void logPayConfig() {
-        log.info("[Pay] enabled={}, channel={}, appId={}", enabled, channel, appId);
+        log.info("[Pay] enabled={}, channel={}, appId={}, encrypted={}", enabled, channel, appId,
+                encryptKey != null && !encryptKey.isBlank());
     }
 }

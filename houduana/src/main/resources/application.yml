@@ -51,6 +51,7 @@ pay:
   server-url: ${PAY_SERVER_URL:https://openapi-sandbox.dl.alipaydev.com/gateway.do}
   notify-url: ${PAY_NOTIFY_URL:}
   return-url: ${PAY_RETURN_URL:}
+  encrypt-key: ${PAY_ENCRYPT_KEY:}
   pay-timeout-minutes: ${PAY_TIMEOUT_MINUTES:30}
 
 # ====== 日志配置 ======
