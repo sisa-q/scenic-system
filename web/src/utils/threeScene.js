@@ -153,6 +153,7 @@ let contourVCount = 0
 let buildings = []
 let crowdCtl = null
 let lowInstances = null
+let lowRoofInstances = null
 let lodCounts = { high: 0, mid: 0, low: 0 }
 
 // 监测立柱
@@ -716,6 +717,10 @@ function createGugongBuildings() {
     // 远景：GPU 硬件实例化（InstancedMesh，单 Draw Call 绘制全部远景建筑）
     const lowGeo = new THREE.BoxGeometry(1, 1, 1)
     const lowMat = new THREE.MeshStandardMaterial({ color: 0x994433, roughness: 0.8, metalness: 0.05 })
+    const lowRoofGeo = new THREE.ConeGeometry(0.8, 0.55, 4)
+    const lowRoofMat = new THREE.MeshStandardMaterial({ color: MAT_COLORS.roof, roughness: 0.5, metalness: 0.3, side: THREE.DoubleSide })
+    lowRoofInstances = new THREE.InstancedMesh(lowRoofGeo, lowRoofMat, ids.length)
+    lowRoofInstances.frustumCulled = false
     const ids = Object.keys(GUGONG_LAYOUT)
     lowInstances = new THREE.InstancedMesh(lowGeo, lowMat, ids.length)
     lowInstances.frustumCulled = false
@@ -758,11 +763,14 @@ function createGugongBuildings() {
         tmpScale.set(0, 0, 0)
         tmpMtx.compose(tmpPos, tmpQuat, tmpScale)
         lowInstances.setMatrixAt(index, tmpMtx)
+        lowRoofInstances.setMatrixAt(index, tmpMtx)
         lowInstances.setColorAt(index, new THREE.Color(0xcc8855))
     })
     lowInstances.instanceMatrix.needsUpdate = true
     lowInstances.instanceColor.needsUpdate = true
     scene.add(lowInstances)
+    lowRoofInstances.instanceMatrix.needsUpdate = true
+    scene.add(lowRoofInstances)
 
     // 中轴线地砖（示意）
     const lineMat = new THREE.LineBasicMaterial({ color: 0x444466, transparent: true, opacity: 0.2 })
@@ -794,6 +802,18 @@ function updateLOD() {
             tmpMtx.compose(tmpPos, tmpQuat, tmpScale)
             lowInstances.setMatrixAt(b.index, tmpMtx)
             lowInstances.instanceMatrix.needsUpdate = true
+            if (level === 2) {
+                const dim = b.dim
+                const boxH = dim.h * 0.72
+                tmpPos.set(b.x, 0.15 + boxH / 2 + boxH * 0.32, b.z)
+                tmpScale.set(dim.w * 0.85 * 0.9, boxH * 0.6, dim.d * 0.85 * 0.9)
+            } else {
+                tmpPos.set(b.x, 0.15, b.z)
+                tmpScale.set(0, 0, 0)
+            }
+            tmpMtx.compose(tmpPos, tmpQuat, tmpScale)
+            lowRoofInstances.setMatrixAt(b.index, tmpMtx)
+            lowRoofInstances.instanceMatrix.needsUpdate = true
         }
         lodCounts[level === 0 ? 'high' : (level === 1 ? 'mid' : 'low')]++
     })
@@ -1821,6 +1841,7 @@ export function destroyScene() {
     buildings.forEach((b) => { if (scene && b.root) scene.remove(b.root) })
     buildings = []
     if (lowInstances) { lowInstances.dispose(); if (scene) scene.remove(lowInstances); lowInstances = null }
+    if (lowRoofInstances) { lowRoofInstances.dispose(); if (scene) scene.remove(lowRoofInstances); lowRoofInstances = null }
     if (columnInstances) { columnInstances.dispose(); if (scene) scene.remove(columnInstances); columnInstances = null }
     columns.forEach((c) => { if (scene) { scene.remove(c.halo); scene.remove(c.ring) } })
     columns = []
