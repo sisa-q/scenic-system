@@ -357,24 +357,36 @@ html, body {
 }
 .admin-list-card .el-table .el-table__cell { background: transparent; }
 
-/* ---- 弹窗：强制页面正中间，超高可滚动，不跑出可视区 ---- */
-.el-overlay { display: flex; align-items: center; justify-content: center; }
-.el-overlay-dialog {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0;
+/* ---- 弹窗：强制屏幕正中，内容超高时在弹窗内部滚动，无需拖动页面 ---- */
+.el-overlay {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 16px;
 }
-.el-overlay-dialog .el-dialog {
+.el-overlay-dialog {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  max-height: 100%;
+}
+.el-overlay-dialog > .el-dialog {
   margin: 0 !important;
   max-width: calc(100vw - 40px);
-  max-height: 90vh;
-  overflow: auto;
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
   border-radius: 14px;
   border: 1px solid rgba(120, 170, 255, 0.18);
   background: linear-gradient(165deg, #101b38, #0c1428);
   color: #e6eeff;
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6), 0 0 40px rgba(70, 140, 255, 0.12);
+}
+/* 内容超高：仅在弹窗内部滚动，弹窗本身始终居中 */
+.el-overlay-dialog > .el-dialog > .el-dialog__body {
+  overflow: auto;
+  min-height: 0;
 }
 .el-overlay-dialog .el-dialog__title { color: #eef3ff; letter-spacing: 2px; }
 .el-overlay-dialog .el-dialog__headerbtn .el-dialog__close { color: #8fa0c2; }
