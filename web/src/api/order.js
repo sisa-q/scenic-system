@@ -22,6 +22,11 @@ export function alipayReturn(params) {
 }
 
 // 模拟支付确认（开发/演示：走与真实回调相同的幂等确认逻辑）
+// 支付状态刷新兜底：对待支付订单主动查询支付宝并确认（页面按模拟支付逻辑确认订单）
+export function refreshPayStatus(id, options) {
+    return request.post(`/pay/refresh/${id}`, null, { ...options })
+}
+
 export function mockConfirmPay(id) {
     return request.post(`/pay/mock/confirm/${id}`)
 }

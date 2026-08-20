@@ -107,7 +107,7 @@
 <script>
     import TabBar from '@/components/web/TabBar.vue'
     import { showToast, showConfirmDialog } from 'vant'
-    import { getOrderDetail, applyRefund, cancelRefund } from '@/api/order'
+    import { getOrderDetail, applyRefund, cancelRefund, refreshPayStatus } from '@/api/order'
     import { submitEvaluation, updateEvaluation, getOrderEvaluation } from '@/api/evaluation'
     import StarRating from '@/components/web/StarRating.vue'
     import { getTokenRole } from '@/utils/auth'
@@ -141,7 +141,8 @@
                 // 待支付倒计时（限时 30 分钟，与后端 pay.pay-timeout-minutes 一致）
                 remainSeconds: 30 * 60,
                 countdownTimer: null,
-                refreshTimer: null
+                refreshTimer: null,
+                lastPayRefresh: 0
             }
         },
         computed: {
@@ -247,6 +248,11 @@
                 const orderId = this.$route.params.id || this.$route.query.id
                 this.refreshTimer = setInterval(() => {
                     if (orderId) this.fetchOrderDetail(orderId, true)
+                    // 待支付订单：每 15 秒主动查询支付宝一次（异步通知延迟/丢失时，页面按模拟支付确认订单）
+                    if (orderId && this.order && this.order.status === 0 && Date.now() - this.lastPayRefresh > 15000) {
+                        this.lastPayRefresh = Date.now()
+                        this.refreshPaymentStatus(orderId)
+                    }
                 }, 3000)
             },
             stopAutoRefresh() {
@@ -258,7 +264,22 @@
             onVisibilityChange() {
                 if (!document.hidden) {
                     const orderId = this.$route.params.id || this.$route.query.id
-                    if (orderId) this.fetchOrderDetail(orderId, true)
+                    if (orderId) {
+                        this.fetchOrderDetail(orderId, true)
+                        if (this.order && this.order.status === 0) {
+                            this.lastPayRefresh = Date.now()
+                            this.refreshPaymentStatus(orderId)
+                        }
+                    }
+                }
+            },
+            // 主动查询支付宝交易状态并确认订单（静默，页面按模拟支付逻辑确认）
+            async refreshPaymentStatus(orderId) {
+                try {
+                    await refreshPayStatus(orderId, { silent: true })
+                    await this.fetchOrderDetail(orderId, true)
+                } catch (e) {
+                    // 静默失败
                 }
             },
             async fetchEvaluation(orderId) {

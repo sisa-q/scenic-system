@@ -14,6 +14,8 @@ import com.scenic.util.AlipaySigner;
 import com.scenic.vo.PayResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -26,6 +28,7 @@ public class PayServiceImpl implements PayService {
     private static final DateTimeFormatter TS = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final String SUCCESS = "success";
     private static final String FAILURE = "failure";
+    private static final Logger log = LoggerFactory.getLogger(PayServiceImpl.class);
 
     @Autowired(required = false)
     private PayProperties payProperties;
@@ -201,6 +204,43 @@ public class PayServiceImpl implements PayService {
     }
 
     /** 幂等确认订单已支付：金额校验 + 更新订单 + 落支付流水（异步回调与同步跳转共用） */
+    /**
+     * 前端刷新支付状态兜底：对待支付订单主动查询支付宝交易状态，若已支付则确认订单。
+     * 实现“支付宝支付成功 -> 页面按模拟支付逻辑确认订单”，异步通知延迟/丢失时也能让订单变已支付。
+     */
+    @Override
+    public PayResult refreshOrderPaymentStatus(Long orderId, Long operatorId, String role) {
+        Order order = orderRepository.findById(orderId).orElseThrow(() -> new RuntimeException("订单不存在"));
+        if (!"admin".equals(role) && (operatorId == null || order.getUserId() == null || !operatorId.equals(order.getUserId()))) {
+            throw new RuntimeException("无权操作该订单");
+        }
+        // 只有真实支付宝通道的“待支付”订单才主动查询（模拟通道支付后即已确认，无需查询）
+        if (order.getStatus() != null && order.getStatus() == 0 && realAlipay() && alipaySigner != null && payProperties != null) {
+            try {
+                String resp = alipaySigner.queryTrade(order.getOrderNo(), payProperties);
+                JsonNode respNode = alipaySigner.parseResponse(resp, payProperties);
+                log.info("[Pay][refresh] 查询交易: code={}, sub_code={}, trade_status={}", respNode.path("code").asText(),
+                        respNode.path("sub_code").asText(), respNode.path("trade_status").asText());
+                if ("10000".equals(respNode.path("code").asText())
+                        && "TRADE_SUCCESS".equals(respNode.path("trade_status").asText())) {
+                    String result = confirmPaidOrder(order.getOrderNo(),
+                            respNode.path("trade_no").asText(), respNode.path("total_amount").asText());
+                    log.info("[Pay][refresh] 主动查询确认结果: {}", result);
+                }
+            } catch (Exception e) {
+                log.warn("[Pay][refresh] 查询异常: {}", e.getMessage());
+            }
+        }
+        Order latest = orderRepository.findById(orderId).orElse(order);
+        PayResult r = new PayResult();
+        r.setType(realAlipay() ? "alipay" : "mock");
+        r.setOrderId(latest.getId());
+        r.setOrderNo(latest.getOrderNo());
+        r.setAmount(latest.getTotalAmount());
+        r.setStatus(latest.getStatus());
+        return r;
+    }
+
     private String confirmPaidOrder(String outTradeNo, String tradeNo, String totalAmount) {
         if (outTradeNo == null || tradeNo == null) return FAILURE;
         // 同一笔交易重复确认直接视为成功，保证幂等
