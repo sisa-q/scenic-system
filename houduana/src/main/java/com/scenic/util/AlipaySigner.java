@@ -23,6 +23,8 @@ import java.security.PublicKey;
 import java.security.Signature;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.security.interfaces.RSAPrivateCrtKey;
+import java.security.spec.RSAPublicKeySpec;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -158,6 +160,28 @@ public class AlipaySigner {
             return node;
         }
         return root;
+    }
+
+    /** 由应用私钥推导对应的应用公钥（X509 Base64，无 PEM 头尾），用于与开放平台控制台上传的“应用公钥”核对 */
+    public static String deriveAppPublicKeyBase64(String privateKeyPem) {
+        try {
+            PrivateKey key = KeyFactory.getInstance("RSA")
+                    .generatePrivate(new PKCS8EncodedKeySpec(Base64.getMimeDecoder().decode(base64Body(privateKeyPem))));
+            RSAPrivateCrtKey crt = (RSAPrivateCrtKey) key;
+            PublicKey pub = KeyFactory.getInstance("RSA")
+                    .generatePublic(new RSAPublicKeySpec(crt.getModulus(), crt.getPublicExponent()));
+            return Base64.getEncoder().encodeToString(pub.getEncoded());
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /** 提取 PEM 文本中的 Base64 主体（去掉 BEGIN/END 头尾与空白） */
+    public static String base64Body(String pem) {
+        if (pem == null) return "";
+        return pem.replaceAll("-----BEGIN [A-Z ]+-----", "")
+                .replaceAll("-----END [A-Z ]+-----", "")
+                .replaceAll("\\s", "");
     }
 
     public String buildPagePayUrl(Order order, PayProperties props) throws Exception {

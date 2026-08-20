@@ -1,5 +1,6 @@
 package com.scenic.config;
 
+import com.scenic.util.AlipaySigner;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,10 +60,17 @@ public class PayProperties {
     public String getEncryptKey() { return encryptKey; }
     public void setEncryptKey(String encryptKey) { this.encryptKey = encryptKey; }
 
-    /** 启动时打印当前支付通道，便于排查为什么还是模拟支付 */
+    /** 启动时打印当前支付通道，便于排查为什么还是模拟支付；并核对应用密钥对 */
     @PostConstruct
     public void logPayConfig() {
         log.info("[Pay] enabled={}, channel={}, appId={}, encrypted={}", enabled, channel, appId,
                 encryptKey != null && !encryptKey.isBlank());
+        if (enabled && "alipay".equalsIgnoreCase(channel)) {
+            String derived = AlipaySigner.deriveAppPublicKeyBase64(privateKey);
+            log.info("[Pay] 由应用私钥推导的应用公钥（请与开放平台控制台“应用公钥”比对是否一致）: {}", derived);
+            if (derived != null && derived.equals(AlipaySigner.base64Body(alipayPublicKey))) {
+                log.warn("[Pay] 配置疑似错误：alipay-public-key 填的是应用公钥，而该字段应为“支付宝公钥”（用于验签支付宝返回内容）");
+            }
+        }
     }
 }

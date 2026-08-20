@@ -145,4 +145,14 @@ class AlipaySignerTest {
 
         assertThat(node.path("code").asText()).isEqualTo("10000");
     }
+
+    @Test
+    @DisplayName("由应用私钥可推导出对应应用公钥（用于核对控制台上传的公钥）")
+    void deriveAppPublicKey_matchesPair() throws Exception {
+        KeyPair kp = keyPair();
+        String derived = AlipaySigner.deriveAppPublicKeyBase64(pemPrivate(kp.getPrivate()));
+
+        assertThat(derived).isNotBlank();
+        assertThat(AlipaySigner.base64Body(pemPublic(kp.getPublic()))).isEqualTo(derived);
+    }
 }
