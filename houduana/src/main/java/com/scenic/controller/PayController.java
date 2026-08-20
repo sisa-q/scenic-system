@@ -47,17 +47,6 @@ public class PayController {
         }
     }
 
-    /** 列表页兜底：对当前用户的待支付订单批量主动查支付宝并确认（订单所有者/管理员，需登录） */
-    @PostMapping("/refresh-pending")
-    public Result refreshPending(@RequestHeader(value = "Authorization", required = false) String authHeader) {
-        try {
-            int n = payService.refreshPendingOrders(parseUserId(authHeader), parseRole(authHeader));
-            return Result.success(n);
-        } catch (RuntimeException e) {
-            return Result.error(e.getMessage());
-        }
-    }
-
     @PostMapping("/mock/confirm/{id}")
     public Result mockConfirm(@PathVariable Long id,
                               @RequestHeader(value = "Authorization", required = false) String authHeader) {

@@ -241,37 +241,6 @@ public class PayServiceImpl implements PayService {
         return r;
     }
 
-    /**
-     * 列表页兜底：把当前用户（或管理员全部）的“待支付”订单主动查询支付宝并确认。
-     * 用于异步通知未到达、用户未进详情页时，打开订单列表也能自动把已支付的订单确认掉。
-     */
-    @Override
-    public int refreshPendingOrders(Long userId, String role) {
-        if (!realAlipay() || alipaySigner == null || payProperties == null || orderRepository == null) return 0;
-        List<Order> pending = "admin".equals(role)
-                ? orderRepository.findByStatus(0)
-                : orderRepository.findByUserIdAndStatusAndUserVisible(userId, 0, 1);
-        if (pending == null || pending.isEmpty()) return 0;
-        int confirmed = 0;
-        for (Order o : pending) {
-            if (o.getStatus() == null || o.getStatus() != 0) continue;
-            try {
-                String resp = alipaySigner.queryTrade(o.getOrderNo(), payProperties);
-                JsonNode respNode = alipaySigner.parseResponse(resp, payProperties);
-                if ("10000".equals(respNode.path("code").asText())
-                        && "TRADE_SUCCESS".equals(respNode.path("trade_status").asText())) {
-                    String result = confirmPaidOrder(o.getOrderNo(),
-                            respNode.path("trade_no").asText(), respNode.path("total_amount").asText());
-                    if (SUCCESS.equals(result)) confirmed++;
-                }
-            } catch (Exception e) {
-                log.warn("[Pay][refreshPending] 查询异常 orderNo={}: {}", o.getOrderNo(), e.getMessage());
-            }
-        }
-        log.info("[Pay][refreshPending] 待支付 {} 笔，确认 {} 笔", pending.size(), confirmed);
-        return confirmed;
-    }
-
     private String confirmPaidOrder(String outTradeNo, String tradeNo, String totalAmount) {
         if (outTradeNo == null || tradeNo == null) return FAILURE;
         // 同一笔交易重复确认直接视为成功，保证幂等

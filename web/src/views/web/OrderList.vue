@@ -61,7 +61,7 @@
 </template>
 
 <script>
-    import { getOrderList, hideOrders, refreshPendingPayments } from '@/api/order'
+    import { getOrderList, hideOrders } from '@/api/order'
     import OrderItem from '@/components/web/OrderItem.vue'
     import TabBar from '@/components/web/TabBar.vue'
     import { showToast, showConfirmDialog } from 'vant'
@@ -74,8 +74,7 @@
                 activeStatus: -1,
                 list: [],
                 selectedIds: [],
-                refreshTimer: null,
-                lastPendingRefresh: 0
+                refreshTimer: null
             }
         },
         computed: {
@@ -94,8 +93,6 @@
             // 支付成功后带 status=1 跳转，自动切到“已支付”页签
             this.applyStatusQuery()
             this.fetchOrders()
-            // 列表页兜底：有待支付订单时主动查支付宝确认（通知未到也能自动变已支付）
-            this.tryRefreshPending(true)
             // 实时同步：每 3 秒静默刷新（支付/退款等状态变更即时可见）
             this.startAutoRefresh()
             document.addEventListener('visibilitychange', this.onVisibilityChange)
@@ -141,25 +138,10 @@
                     this.activeStatus = n
                 }
             },
-            // 列表页兜底：有待支付订单时主动查支付宝确认（静默）
-            async tryRefreshPending(force = false) {
-                const hasPending = (this.list || []).some(o => o.status === 0)
-                if (!hasPending) return
-                if (!force && Date.now() - this.lastPendingRefresh < 30000) return
-                this.lastPendingRefresh = Date.now()
-                try {
-                    await refreshPendingPayments({ silent: true })
-                    await this.fetchOrders(true)
-                } catch (e) {
-                    // 静默失败
-                }
-            },
             startAutoRefresh() {
                 this.stopAutoRefresh()
                 this.refreshTimer = setInterval(() => {
                     this.fetchOrders(true)
-                    // 列表页兜底：每 30 秒自动查一次待支付订单（已支付则确认）
-                    this.tryRefreshPending()
                 }, 3000)
             },
             stopAutoRefresh() {
@@ -169,10 +151,9 @@
                 }
             },
             onVisibilityChange() {
-                // 切回页面时立即刷新一次，并对待支付订单主动查单
+                // 切回页面时立即刷新一次
                 if (!document.hidden) {
                     this.fetchOrders(true)
-                    this.tryRefreshPending()
                 }
             },
             onTabChange() {

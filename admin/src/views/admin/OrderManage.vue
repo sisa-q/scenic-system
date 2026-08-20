@@ -94,7 +94,6 @@
 
 <script>
     import { getOrderList, refundOrder, batchDeleteOrders } from '@/api/order'
-    import { refreshPendingPayments } from '@/api/pay'
     import { ElMessage, ElMessageBox } from 'element-plus'
 
     export default {
@@ -108,7 +107,6 @@
                 currentOrder: null,
                 selectedIds: [],
                 refreshTimer: null,
-                lastPendingRefresh: 0,
                 statusMap: {
                     0: { label: '待支付', type: 'warning' },
                     1: { label: '已支付', type: 'success' },
@@ -125,10 +123,8 @@
                 return this.tableData.filter(r => r.status === 5 || (r.status === 1 && r.disabled)).length
             }
         },
-        async mounted() {
-            await this.fetchList()
-            // 列表页兜底：有待支付订单时主动查支付宝确认（通知未到也能自动变已支付）
-            this.tryRefreshPending(true)
+        mounted() {
+            this.fetchList()
             this.startAutoRefresh()
             document.addEventListener('visibilitychange', this.onVisibilityChange)
         },
@@ -183,29 +179,13 @@
             onVisibilityChange() {
                 if (!document.hidden) {
                     this.refreshData()
-                    this.tryRefreshPending()
                 }
             },
             // 每 2 秒自动刷新：游客退款申请后红色标记几乎立即反映，直到转为已退款才取消
-            // 列表页兜底：有待支付订单时主动查支付宝确认（静默）
-            async tryRefreshPending(force = false) {
-                const hasPending = (this.tableData || []).some(o => o.status === 0)
-                if (!hasPending) return
-                if (!force && Date.now() - this.lastPendingRefresh < 30000) return
-                this.lastPendingRefresh = Date.now()
-                try {
-                    await refreshPendingPayments({ silent: true })
-                    await this.refreshData()
-                } catch (e) {
-                    // 静默失败
-                }
-            },
             startAutoRefresh() {
                 if (this.refreshTimer) clearInterval(this.refreshTimer)
                 this.refreshTimer = setInterval(() => {
                     this.refreshData()
-                    // 列表页兜底：每 30 秒自动查一次待支付订单（已支付则确认）
-                    this.tryRefreshPending()
                 }, 2000)
             },
             resetSearch() {

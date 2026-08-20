@@ -27,11 +27,6 @@ export function refreshPayStatus(id, options) {
     return request.post(`/pay/refresh/${id}`, null, { ...options })
 }
 
-// 列表页兜底：对待支付订单批量主动查询支付宝并确认
-export function refreshPendingPayments(options) {
-    return request.post('/pay/refresh-pending', null, { ...options })
-}
-
 export function mockConfirmPay(id) {
     return request.post(`/pay/mock/confirm/${id}`)
 }
