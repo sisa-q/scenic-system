@@ -3,20 +3,30 @@
         <div class="pay-card">
             <div class="pay-title">订单支付</div>
             <div class="pay-row"><span>订单号</span><span>{{ orderNo || (returning ? '确认中…' : '') }}</span></div>
-            <div class="pay-row"><span>应付金额</span><span class="amount">¥{{ amountText }}</span></div>
+            <div class="pay-row"><span>应付金额</span><span class="amount">￥{{ amountText }}</span></div>
 
-            <template v-if="type === 'alipay'">
-                <div class="pay-tip">正在跳转支付宝安全收银台…</div>
-                <van-button type="primary" block round @click="pay">重新打开收银台</van-button>
-            </template>
-            <template v-else-if="type === 'mock'">
-                <div class="pay-tip">当前为模拟支付通道（未配置支付宝沙箱）</div>
-                <van-button type="success" block round :loading="paying" @click="mockPay">模拟支付成功</van-button>
-            </template>
-            <template v-else>
-                <van-button type="primary" block round :loading="paying" @click="pay">去支付</van-button>
-            </template>
-            <van-button plain block style="margin-top:10px;" @click="cancel">返回</van-button>
+            <!-- 支付方式选择：模拟支付 / 支付宝沙箱支付（两个模式独立） -->
+            <div class="pay-methods">
+                <div class="pay-method" :class="{ active: mode === 'mock' }" @click="selectMode('mock')">
+                    <div class="method-title">模拟支付</div>
+                    <div class="method-desc">本地演示，不调用支付宝，直接确认支付</div>
+                </div>
+                <div class="pay-method" :class="{ active: mode === 'alipay' }" @click="selectMode('alipay')">
+                    <div class="method-title">支付宝沙箱支付</div>
+                    <div class="method-desc">跳转支付宝沙箱收银台完成支付</div>
+                </div>
+            </div>
+
+            <van-button
+                    :type="mode === 'alipay' ? 'primary' : 'success'"
+                    block
+                    round
+                    :loading="paying"
+                    @click="confirmPay"
+            >
+                {{ mode === 'alipay' ? '去支付宝收银台支付' : '模拟支付成功' }}
+            </van-button>
+            <van-button plain block style="margin-top:10px;" @click="cancel">取消</van-button>
         </div>
     </div>
 </template>
@@ -33,17 +43,17 @@
                 spotId: '',
                 orderNo: '',
                 amountText: '0.00',
-                type: '',        // mock | alipay
-                redirectUrl: '',
+                // 支付模式：mock=模拟支付 / alipay=支付宝沙箱支付
+                mode: 'mock',
                 paying: false,
-                returning: false // 正在确认支付宝跳回结果
+                returning: false // 正在确认支付宝支付结果并跳转
             }
         },
         mounted() {
             const q = this.$route.query
             this.orderId = q.orderId
             this.spotId = q.spotId || ''
-            // 从支付宝收银台跳回（return_url 携带 out_trade_no/sign 等参数）：主动验签+查单兜底确认
+            // 支付宝支付后（return_url 场景，可选）带 out_trade_no 跳回时，验签+查单确认
             if (q.out_trade_no) {
                 this.returning = true
                 this.confirmReturn(q)
@@ -57,6 +67,9 @@
             }
         },
         methods: {
+            selectMode(m) {
+                this.mode = m
+            },
             async fetchOrder() {
                 try {
                     const res = await getOrderDetail(this.orderId)
@@ -66,7 +79,7 @@
                     showToast('获取订单信息失败')
                 }
             },
-            // 支付宝同步跳转兜底确认：后端验签 + alipay.trade.query 权威查单
+            // 支付宝同步跳转兜底确认（当前未配置 return_url 时不会触发）
             async confirmReturn(q) {
                 this.paying = true
                 try {
@@ -74,8 +87,7 @@
                     showToast('支付成功')
                     this.$router.replace({ path: '/orders', query: { refreshed: Date.now(), status: 1 } })
                 } catch (e) {
-                    // 验签失败/尚未支付成功/异步回调未到达：回到支付页，可重新发起或稍后查看订单
-                    showToast(e.msg || e.message || '支付结果确认中，请稍后在订单列表查看')
+                    showToast(e.msg || e.message || '支付结果确认中，可稍后在订单列表查看')
                     this.returning = false
                     if (this.orderId) {
                         this.fetchOrder()
@@ -84,24 +96,31 @@
                     this.paying = false
                 }
             },
+            async confirmPay() {
+                if (this.mode === 'alipay') {
+                    await this.pay()
+                } else {
+                    await this.mockPay()
+                }
+            },
+            // 支付宝沙箱支付：生成收银台链接并跳转
             async pay() {
                 this.paying = true
                 try {
-                    const res = await payOrder(this.orderId)
+                    const res = await payOrder(this.orderId, 'alipay')
                     const d = res.data || {}
-                    this.type = d.type || 'mock'
-                    this.redirectUrl = d.redirectUrl || ''
-                    if (this.type === 'alipay' && this.redirectUrl) {
-                        window.location.href = this.redirectUrl
+                    if (d.type === 'alipay' && d.redirectUrl) {
+                        window.location.href = d.redirectUrl
                         return
                     }
-                    showToast('已生成支付单，请确认支付')
+                    showToast('未生成支付宝支付链接，请重试')
                 } catch (e) {
                     showToast(e.msg || e.message || '支付失败，请重试')
                 } finally {
                     this.paying = false
                 }
             },
+            // 模拟支付：直接确认订单（并同步沙箱镜像余额）
             async mockPay() {
                 this.paying = true
                 try {
@@ -131,5 +150,20 @@
     .pay-title { font-size: 18px; font-weight: 700; margin-bottom: 14px; }
     .pay-row { display: flex; justify-content: space-between; padding: 10px 0; color: #323233; font-size: 14px; }
     .pay-row .amount { color: #ee0a24; font-size: 20px; font-weight: 700; }
-    .pay-tip { color: #969799; font-size: 12px; margin: 12px 0; text-align: center; }
+    .pay-methods { display: flex; gap: 10px; margin: 14px 0; }
+    .pay-method {
+        flex: 1;
+        border: 1px solid #e8e8e8;
+        border-radius: 10px;
+        padding: 12px;
+        cursor: pointer;
+        transition: all .15s;
+    }
+    .pay-method.active {
+        border-color: #1989fa;
+        background: #ecf5ff;
+    }
+    .pay-method .method-title { font-size: 15px; font-weight: 600; color: #323233; }
+    .pay-method.active .method-title { color: #1989fa; }
+    .pay-method .method-desc { font-size: 12px; color: #969799; margin-top: 4px; line-height: 1.4; }
 </style>

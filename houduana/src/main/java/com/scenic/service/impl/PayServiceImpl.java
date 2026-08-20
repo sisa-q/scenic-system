@@ -55,6 +55,11 @@ public class PayServiceImpl implements PayService {
 
     @Override
     public PayResult createPayment(Long orderId, Long operatorId, String role) {
+        return createPayment(orderId, operatorId, role, null);
+    }
+
+    @Override
+    public PayResult createPayment(Long orderId, Long operatorId, String role, String mode) {
         Order order = orderRepository.findById(orderId).orElseThrow(() -> new RuntimeException("订单不存在"));
         if (!"admin".equals(role) && (operatorId == null || order.getUserId() == null || !operatorId.equals(order.getUserId()))) {
             throw new RuntimeException("无权支付该订单");
@@ -67,7 +72,9 @@ public class PayServiceImpl implements PayService {
         r.setOrderId(order.getId());
         r.setOrderNo(order.getOrderNo());
         r.setAmount(order.getTotalAmount());
-        if (realAlipay() && alipaySigner != null) {
+        // 两个模式独立：mode=alipay 走支付宝沙箱（生成收银台链接），其余（含空）走模拟支付
+        boolean wantAlipay = "alipay".equalsIgnoreCase(mode);
+        if (wantAlipay && alipaySigner != null && payProperties != null) {
             try {
                 r.setRedirectUrl(alipaySigner.buildPagePayUrl(order, payProperties));
                 r.setType("alipay");

@@ -7,6 +7,8 @@ import java.util.Map;
 
 public interface PayService {
     PayResult createPayment(Long orderId, Long operatorId, String role);
+    /** 指定支付模式：mode=alipay 走支付宝沙箱，mode=mock/null 走模拟支付（两模式独立） */
+    PayResult createPayment(Long orderId, Long operatorId, String role, String mode);
     String handleNotify(Map<String, String> params);
     /** 支付宝同步跳转（return_url）兜底确认：验签 + 主动查询交易状态 */
     PayResult handleReturn(Map<String, String> params);

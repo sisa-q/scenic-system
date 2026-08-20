@@ -55,7 +55,6 @@ class PayServiceImplTest {
     @Test
     @DisplayName("发起支付：未启用支付宝时返回 mock 类型")
     void createPayment_mock() {
-        when(payProperties.isEnabled()).thenReturn(false);
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
 
         PayResult r = payService.createPayment(1L, 100L, "user");

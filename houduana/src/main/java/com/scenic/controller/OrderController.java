@@ -47,7 +47,7 @@ public class OrderController {
             }
         }
 
-        // 传入 page/size 时走数据库分页，否则保持旧的全量列表（兼容前端）
+        // 传了 page/size 时走数据库分页；否则保持旧的全局列表返回给前端
         if (page != null && size != null) {
             return Result.success(orderService.pageOrders(status, key, userId, role, page, size));
         }
@@ -87,22 +87,23 @@ public class OrderController {
 
     @PostMapping("/pay/{id}")
     public Result pay(@PathVariable Long id,
+                      @RequestParam(required = false) String mode,
                       @RequestHeader(value = "Authorization", required = false) String authHeader) {
         try {
-            // 发起支付：返回收银台参数（mock=模拟，alipay=跳转支付宝）
-            return Result.success(payService.createPayment(id, parseUserId(authHeader), parseRole(authHeader)));
+            // mode=alipay 走支付宝沙箱，mode=mock/null 走模拟支付（两个模式独立）
+            return Result.success(payService.createPayment(id, parseUserId(authHeader), parseRole(authHeader), mode));
         } catch (RuntimeException e) {
             return Result.error(e.getMessage());
         }
     }
 
-    /** 游客申请退款：任何角色调用都仅登记“退款申请中”，绝不真正退款 */
+    /** 游客申请退款：任何角色都只是登记“退款申请中”，由管理员在“退款”中处理 */
     @PostMapping("/refund-apply/{id}")
     public Result applyRefund(@PathVariable Long id,
                               @RequestHeader(value = "Authorization", required = false) String authHeader) {
         try {
             orderService.applyRefund(id, parseUserId(authHeader));
-            return Result.success("退款申请已提交，请等待景区审核");
+            return Result.success("退款申请已提交，等待管理员处理");
         } catch (RuntimeException e) {
             return Result.error(e.getMessage());
         }
@@ -161,11 +162,11 @@ public class OrderController {
             return Result.success("已隐藏 " + count + " 条订单");
         } catch (Exception e) {
             e.printStackTrace();
-            return Result.error("操作失败：" + e.getMessage());
+            return Result.error("隐藏失败：" + e.getMessage());
         }
     }
 
-    // ====== 辅助方法 ======
+    // ====== 辅助解析 ======
 
     private Long parseUserId(String authHeader) {
         try {

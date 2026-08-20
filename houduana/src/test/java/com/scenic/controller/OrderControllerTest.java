@@ -76,9 +76,9 @@ class OrderControllerTest {
 
     @Test
     void pay_ok() {
-        when(payService.createPayment(1L, null, "user")).thenReturn(new PayResult());
+        when(payService.createPayment(1L, null, "user", null)).thenReturn(new PayResult());
 
-        Result r = orderController.pay(1L, null);
+        Result r = orderController.pay(1L, null, null);
 
         assertThat(r.getCode()).isEqualTo(200);
     }

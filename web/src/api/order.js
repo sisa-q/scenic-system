@@ -12,7 +12,7 @@ export function createOrder(data) {
     return request.post('/order/create', data)
 }
 
-export function payOrder(id) {
+export function payOrder(id, mode) {
     return request.post(`/order/pay/${id}`)
 }
 
