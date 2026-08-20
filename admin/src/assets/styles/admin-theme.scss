@@ -358,46 +358,31 @@ html, body {
 .admin-list-card .el-table .el-table__cell { background: transparent; }
 
 /* ---- 弹窗：强制屏幕正中，内容超高时在弹窗内部滚动，无需拖动页面 ---- */
+/* ---- 弹窗：独立最前层面，固定屏幕正中（不改遮罩布局，避免影响抽屉/消息等其它弹层） ---- */
 .el-overlay {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  padding: 16px;
-}
-.el-overlay-dialog {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  margin: 0 !important;
-  max-height: 100%;
+  /* 遮罩保持默认 fixed 全屏 + 高 z-index，作为最前独立层 */
+  z-index: 3000 !important;
 }
 .el-overlay-dialog > .el-dialog {
+  /* 固定定位到视口正中：不随页面滚动、不需要拖动 */
   margin: 0 !important;
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   max-width: calc(100vw - 40px);
   max-height: calc(100vh - 32px);
-  display: flex;
-  flex-direction: column;
+  overflow: auto;
   border-radius: 14px;
   border: 1px solid rgba(120, 170, 255, 0.18);
   background: linear-gradient(165deg, #101b38, #0c1428);
   color: #e6eeff;
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6), 0 0 40px rgba(70, 140, 255, 0.12);
 }
-/* 内容超高：仅在弹窗内部滚动，弹窗本身始终居中 */
 .el-overlay-dialog > .el-dialog > .el-dialog__body {
   overflow: auto;
   min-height: 0;
 }
-.el-overlay-dialog .el-dialog__title { color: #eef3ff; letter-spacing: 2px; }
-.el-overlay-dialog .el-dialog__headerbtn .el-dialog__close { color: #8fa0c2; }
-.el-overlay-dialog .el-form-item__label { color: #a9b8d6; }
-.el-overlay-dialog .el-input__wrapper,
-.el-overlay-dialog .el-textarea__inner {
-  background: rgba(8, 16, 34, 0.7);
-  box-shadow: 0 0 0 1px rgba(120, 170, 255, 0.2) inset;
-}
-.el-overlay-dialog .el-input__inner { color: #e6eeff; }
-
 /* ---- 分页 ---- */
 .el-pagination { color: #aebcd8; --el-pagination-bg-color: transparent; }
 .el-pagination button, .el-pagination .el-pager li { background: transparent; color: #aebcd8; }
