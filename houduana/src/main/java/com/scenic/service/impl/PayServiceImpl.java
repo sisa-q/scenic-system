@@ -189,6 +189,14 @@ public class PayServiceImpl implements PayService {
     @Override
     public void refund(Order order) {
         if (!realAlipay() || alipaySigner == null || payProperties == null) return;
+        // 只有真实支付宝支付过的订单才调支付宝原路退款；模拟支付订单没有支付宝交易，调用会返回“交易不存在”
+        boolean paidByRealAlipay = false;
+        if (payTransactionRepository != null) {
+            paidByRealAlipay = payTransactionRepository.findByOrderNo(order.getOrderNo())
+                    .map(tx -> "alipay".equalsIgnoreCase(tx.getChannel()))
+                    .orElse(false);
+        }
+        if (!paidByRealAlipay) return;
         try {
             Map<String, Object> biz = new LinkedHashMap<>();
             biz.put("out_trade_no", order.getOrderNo());

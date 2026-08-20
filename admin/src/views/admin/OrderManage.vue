@@ -165,7 +165,7 @@
             async refreshData() {
                 try {
                     const res = await getOrderList({ key: this.searchKey, status: this.statusFilter })
-                    this.tableData = res.data || []
+                    this.tableData = (res.data || []).slice().sort((a, b) => (b.id || 0) - (a.id || 0))
                 } catch (e) {
                     console.error('获取订单失败:', e)
                 }
