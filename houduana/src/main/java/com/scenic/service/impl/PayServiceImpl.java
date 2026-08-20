@@ -8,6 +8,7 @@ import com.scenic.entity.PayTransaction;
 import com.scenic.repository.OrderRepository;
 import com.scenic.repository.PayTransactionRepository;
 import com.scenic.service.OrderService;
+import com.scenic.service.SandboxAccountService;
 import com.scenic.service.PayService;
 import com.scenic.util.AlipaySigner;
 import com.scenic.vo.PayResult;
@@ -40,6 +41,9 @@ public class PayServiceImpl implements PayService {
 
     @Autowired(required = false)
     private PayTransactionRepository payTransactionRepository;
+
+    @Autowired(required = false)
+    private SandboxAccountService sandboxAccountService;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -225,6 +229,13 @@ public class PayServiceImpl implements PayService {
             tx.setNotifyTime(new Date());
             tx.setRawData(outTradeNo);
             try { payTransactionRepository.save(tx); } catch (Exception ignored) { }
+        }
+        // 模拟支付联动：同步沙箱账户镜像（买家减、商户加；仅模拟通道）
+        if (!realAlipay() && sandboxAccountService != null && totalAmount != null) {
+            try {
+                sandboxAccountService.onPaid(outTradeNo, new java.math.BigDecimal(totalAmount));
+            } catch (Exception ignored) {
+            }
         }
         return SUCCESS;
     }

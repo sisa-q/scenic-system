@@ -10,6 +10,7 @@ import com.scenic.repository.TicketPolicyRepository;
 import com.scenic.repository.ScenicSpotRepository;
 import com.scenic.service.OrderService;
 import com.scenic.service.PayService;
+import com.scenic.service.SandboxAccountService;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +51,9 @@ public class OrderServiceImpl implements OrderService {
     @Autowired(required = false)
     @Lazy
     private PayService payService;
+
+    @Autowired(required = false)
+    private SandboxAccountService sandboxAccountService;
 
     @Autowired(required = false)
     private StringRedisTemplate redisTemplate;
@@ -333,6 +337,14 @@ public class OrderServiceImpl implements OrderService {
         order.setRefundTime(new Date());
         order.setRefundRequestTime(null);
         orderRepository.save(order);
+
+        // 模拟退款联动：同步沙箱账户镜像（商户减、买家加；仅对走镜像支付的订单生效）
+        if (sandboxAccountService != null) {
+            try {
+                sandboxAccountService.onRefund(order.getOrderNo(), order.getTotalAmount());
+            } catch (Exception ignored) {
+            }
+        }
 
         // 真正退款后，同步释放时段预约数
         TimeSlot slot = timeSlotRepository.findById(order.getSlotId()).orElse(null);

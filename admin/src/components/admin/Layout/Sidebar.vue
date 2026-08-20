@@ -36,6 +36,10 @@
                 <el-icon><List /></el-icon>
                 <span>订单管理</span>
             </el-menu-item>
+            <el-menu-item index="/admin/sandbox">
+                <el-icon><Wallet /></el-icon>
+                <span>沙箱对账</span>
+            </el-menu-item>
             <el-menu-item index="/admin/evaluation">
                 <el-icon><Star /></el-icon>
                 <span>评价管理</span>
@@ -59,14 +63,14 @@
 <script>
     import {
         Monitor, Location, Ticket, Clock, List,
-        Star, Notification, Checked, User
+        Star, Notification, Checked, User, Wallet
     } from '@element-plus/icons-vue'
 
     export default {
         name: 'Sidebar',
         components: {
             Monitor, Location, Ticket, Clock, List,
-            Star, Notification, Checked, User
+        Star, Notification, Checked, User, Wallet
         }
     }
 </script>
