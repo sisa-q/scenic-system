@@ -46,7 +46,15 @@
                 ref="tableRef"
         >
             <el-table-column type="selection" width="55" />
-            <el-table-column prop="orderNo" label="订单号" width="200" />
+                        <el-table-column prop="orderNo" label="订单号" width="200" />
+            <el-table-column label="支付方式" width="110">
+                <template #default="{ row }">
+                    <el-tag v-if="row.payChannel" :type="row.payChannel === 'alipay' ? 'primary' : 'success'" size="small">
+                        {{ row.payChannel === 'alipay' ? '支付宝支付' : '模拟支付' }}
+                    </el-tag>
+                    <span v-else style="color:#bbb">-</span>
+                </template>
+            </el-table-column>
             <el-table-column prop="spotName" label="景点" />
             <el-table-column prop="policyName" label="票种" />
             <el-table-column prop="startTime" label="时段" width="180" />

@@ -14,6 +14,7 @@
                 <div class="info-row"><label>单价</label><span>¥{{ order.unitPrice }}</span></div>
                 <div class="info-row"><label>总金额</label><span class="total-price">¥{{ order.totalAmount }}</span></div>
                 <div class="info-row"><label>下单时间</label><span>{{ order.createTime }}</span></div>
+                <div class="info-row"><label>支付方式</label><span :class="{ 'total-price': order.payChannel }">{{ payChannelText }}</span></div>
             </div>
             <!-- 待支付倒计时 / 已失效提示 -->
             <div class="pay-timer" v-if="isPending && !isExpired">
@@ -184,6 +185,11 @@
             },
             canEvaluate() {
                 return this.order.status === 2 && !this.hasEvaluated && !this.showEvaluate
+            },
+            payChannelText() {
+                if (this.order.payChannel === 'alipay') return '支付宝支付'
+                if (this.order.payChannel === 'mock') return '模拟支付'
+                return '-'
             },
             canRefund() {
                 // 已支付订单可申请退款（一次性，申请后进入“退款申请中”）

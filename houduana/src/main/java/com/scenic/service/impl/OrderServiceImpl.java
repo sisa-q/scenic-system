@@ -4,6 +4,8 @@ import com.scenic.entity.Order;
 import com.scenic.entity.TimeSlot;
 import com.scenic.entity.TicketPolicy;
 import com.scenic.entity.ScenicSpot;
+import com.scenic.entity.PayTransaction;
+import com.scenic.repository.PayTransactionRepository;
 import com.scenic.repository.OrderRepository;
 import com.scenic.repository.TimeSlotRepository;
 import com.scenic.repository.TicketPolicyRepository;
@@ -47,6 +49,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private ScenicSpotRepository scenicSpotRepository;
+
+    @Autowired(required = false)
+    private PayTransactionRepository payTransactionRepository;
 
     @Autowired(required = false)
     @Lazy
@@ -499,7 +504,18 @@ public class OrderServiceImpl implements OrderService {
                 : scenicSpotRepository.findAllById(spotIds).stream()
                         .collect(Collectors.toMap(ScenicSpot::getId, s -> s, (a, b) -> a));
 
+        List<String> orderNos = orders.stream()
+                .map(Order::getOrderNo)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+        Map<String, String> payChannelMap = (payTransactionRepository == null || orderNos.isEmpty())
+                ? Collections.emptyMap()
+                : payTransactionRepository.findByOrderNoIn(orderNos).stream()
+                        .collect(Collectors.toMap(PayTransaction::getOrderNo, PayTransaction::getChannel, (a, b) -> a));
+
         for (Order order : orders) {
+            order.setPayChannel(payChannelMap.get(order.getOrderNo()));
             TimeSlot slot = slotMap.get(order.getSlotId());
             TicketPolicy policy = policyMap.get(order.getPolicyId());
             ScenicSpot spot = null;

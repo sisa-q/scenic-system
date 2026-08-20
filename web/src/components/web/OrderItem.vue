@@ -2,6 +2,7 @@
     <div class="order-item" @click="$emit('click')">
         <div class="order-header">
             <span class="order-no">订单号：{{ orderNo }}</span>
+            <span v-if="payChannel" class="pay-tag" :class="payChannel === 'alipay' ? 'tag-alipay' : 'tag-mock'">{{ payChannel === 'alipay' ? '支付宝支付' : '模拟支付' }}</span>
             <span class="order-status" :style="{ color: statusColor }">{{ statusText }}</span>
         </div>
         <div class="order-body">
@@ -26,7 +27,8 @@
             createTime: { type: String, default: '' },
             status: { type: Number, default: 0 },
             // 景点/时段是否已停用（后端填充）
-            disabled: { type: Boolean, default: false }
+            disabled: { type: Boolean, default: false },
+            payChannel: { type: String, default: '' }
         },
         emits: ['click'],
         computed: {
@@ -75,6 +77,16 @@
         text-overflow: ellipsis;
         white-space: nowrap;
     }
+    .pay-tag {
+        flex-shrink: 0;
+        margin-left: 6px;
+        font-size: 10px;
+        padding: 1px 6px;
+        border-radius: 999px;
+        line-height: 1.6;
+    }
+    .pay-tag.tag-alipay { color: #3a6ec5; background: rgba(36, 86, 168, 0.12); }
+    .pay-tag.tag-mock { color: #1f9d55; background: rgba(31, 157, 85, 0.12); }
     .order-status {
         flex-shrink: 0;
         margin-left: 8px;

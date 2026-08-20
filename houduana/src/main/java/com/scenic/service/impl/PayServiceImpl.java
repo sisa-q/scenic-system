@@ -102,7 +102,7 @@ public class PayServiceImpl implements PayService {
             if (!"TRADE_SUCCESS".equals(tradeStatus) && !"TRADE_FINISHED".equals(tradeStatus)) {
                 return FAILURE;
             }
-            return confirmPaidOrder(params.get("out_trade_no"), params.get("trade_no"), params.get("total_amount"));
+            return confirmPaidOrder(params.get("out_trade_no"), params.get("trade_no"), params.get("total_amount"), "alipay");
         } catch (Exception e) {
             return FAILURE;
         }
@@ -147,7 +147,7 @@ public class PayServiceImpl implements PayService {
                 throw new RuntimeException("查询支付宝交易异常：" + e.getMessage());
             }
         }
-        if (!SUCCESS.equals(confirmPaidOrder(outTradeNo, tradeNo, totalAmount))) {
+        if (!SUCCESS.equals(confirmPaidOrder(outTradeNo, tradeNo, totalAmount, "alipay"))) {
             throw new RuntimeException("支付确认失败，请稍后在订单列表查看");
         }
         PayResult r = new PayResult();
@@ -167,7 +167,7 @@ public class PayServiceImpl implements PayService {
         String tradeNo = "MOCK" + order.getOrderNo();
         String totalAmount = order.getTotalAmount() == null ? "0.00" : order.getTotalAmount().toPlainString();
         // 模拟支付：不走支付宝验签通道，直接确认订单（与真实支付宝彻底解耦，不受 channel 影响）
-        String result = confirmPaidOrder(order.getOrderNo(), tradeNo, totalAmount);
+        String result = confirmPaidOrder(order.getOrderNo(), tradeNo, totalAmount, "mock");
         if (!SUCCESS.equals(result)) {
             throw new RuntimeException("模拟支付确认失败");
         }
@@ -223,7 +223,7 @@ public class PayServiceImpl implements PayService {
     }
 
     /** 幂等确认订单已支付：金额校验 + 更新订单 + 落支付流水（异步回调与同步跳转共用） */
-    private String confirmPaidOrder(String outTradeNo, String tradeNo, String totalAmount) {
+    private String confirmPaidOrder(String outTradeNo, String tradeNo, String totalAmount, String channel) {
         if (outTradeNo == null || tradeNo == null) return FAILURE;
         // 同一笔交易重复确认直接视为成功，保证幂等
         if (payTransactionRepository != null && payTransactionRepository.findByTransactionId(tradeNo).isPresent()) {
@@ -244,7 +244,7 @@ public class PayServiceImpl implements PayService {
         if (payTransactionRepository != null) {
             PayTransaction tx = new PayTransaction();
             tx.setOrderNo(outTradeNo);
-            tx.setChannel(realAlipay() ? "alipay" : "mock");
+            tx.setChannel(channel);
             tx.setTransactionId(tradeNo);
             tx.setAmountFen(totalAmount == null ? null : Math.round(Double.parseDouble(totalAmount) * 100));
             tx.setStatus(1);

@@ -125,8 +125,7 @@ class PayServiceImplTest {
     @Test
     @DisplayName("模拟支付确认：即使 channel=alipay 也成功（不走支付宝验签通道）")
     void mockConfirm_worksInAlipayChannel() {
-        when(payProperties.isEnabled()).thenReturn(true);
-        when(payProperties.getChannel()).thenReturn("alipay");
+        // 模拟支付与 channel 无关：无需 stub isEnabled/channel
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
         when(payTransactionRepository.findByTransactionId("MOCKNO20260808")).thenReturn(Optional.empty());
         when(orderRepository.findByOrderNo("NO20260808")).thenReturn(Optional.of(order));

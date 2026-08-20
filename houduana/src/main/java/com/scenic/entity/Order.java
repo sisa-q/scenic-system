@@ -73,4 +73,8 @@ public class Order {
 
     @Transient
     private Boolean disabled;
+
+    /** 支付方式：mock=模拟支付 / alipay=支付宝支付（来自支付流水，展示用） */
+    @Transient
+    private String payChannel;
 }
