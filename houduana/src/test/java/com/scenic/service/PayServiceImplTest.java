@@ -121,4 +121,19 @@ class PayServiceImplTest {
         assertThat(payService.handleNotify(params)).isEqualTo("failure");
         verify(orderService, never()).payOrder(any(), any(), any());
     }
+
+    @Test
+    @DisplayName("模拟支付确认：即使 channel=alipay 也成功（不走支付宝验签通道）")
+    void mockConfirm_worksInAlipayChannel() {
+        when(payProperties.isEnabled()).thenReturn(true);
+        when(payProperties.getChannel()).thenReturn("alipay");
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(payTransactionRepository.findByTransactionId("MOCKNO20260808")).thenReturn(Optional.empty());
+        when(orderRepository.findByOrderNo("NO20260808")).thenReturn(Optional.of(order));
+
+        PayResult r = payService.mockConfirm(1L, 100L, "user");
+
+        assertThat(r.getType()).isEqualTo("mock");
+        verify(orderService).payOrder(1L, 100L, "user");
+    }
 }

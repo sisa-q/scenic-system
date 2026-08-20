@@ -165,14 +165,19 @@ public class PayServiceImpl implements PayService {
         if (!"admin".equals(role) && (operatorId == null || order.getUserId() == null || !operatorId.equals(order.getUserId()))) {
             throw new RuntimeException("无权支付该订单");
         }
-        Map<String, String> params = new HashMap<>();
-        params.put("out_trade_no", order.getOrderNo());
-        params.put("trade_no", "MOCK" + order.getOrderNo());
-        params.put("trade_status", "TRADE_SUCCESS");
-        params.put("total_amount", order.getTotalAmount() == null ? "0.00" : order.getTotalAmount().toPlainString());
-        String result = handleNotify(params);
+        String tradeNo = "MOCK" + order.getOrderNo();
+        String totalAmount = order.getTotalAmount() == null ? "0.00" : order.getTotalAmount().toPlainString();
+        // 模拟支付：不走支付宝验签通道，直接确认订单（与真实支付宝彻底解耦，不受 channel 影响）
+        String result = confirmPaidOrder(order.getOrderNo(), tradeNo, totalAmount);
         if (!SUCCESS.equals(result)) {
             throw new RuntimeException("模拟支付确认失败");
+        }
+        // 模拟支付联动：同步沙箱账户镜像（买家减、商户加）——模拟模式始终更新，不受 channel 影响
+        if (sandboxAccountService != null) {
+            try {
+                sandboxAccountService.onPaid(order.getOrderNo(), order.getTotalAmount());
+            } catch (Exception ignored) {
+            }
         }
         PayResult r = new PayResult();
         r.setType("mock");
@@ -276,13 +281,6 @@ public class PayServiceImpl implements PayService {
             tx.setNotifyTime(new Date());
             tx.setRawData(outTradeNo);
             try { payTransactionRepository.save(tx); } catch (Exception ignored) { }
-        }
-        // 模拟支付联动：同步沙箱账户镜像（买家减、商户加；仅模拟通道）
-        if (!realAlipay() && sandboxAccountService != null && totalAmount != null) {
-            try {
-                sandboxAccountService.onPaid(outTradeNo, new java.math.BigDecimal(totalAmount));
-            } catch (Exception ignored) {
-            }
         }
         return SUCCESS;
     }
