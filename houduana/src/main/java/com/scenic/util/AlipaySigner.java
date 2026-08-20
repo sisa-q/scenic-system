@@ -221,6 +221,12 @@ public class AlipaySigner {
         params.put("timestamp", LocalDateTime.now().format(TS));
         params.put("version", "1.0");
         if (props.getNotifyUrl() != null && !props.getNotifyUrl().isBlank()) params.put("notify_url", props.getNotifyUrl());
+        if (props.getReturnUrl() != null && !props.getReturnUrl().isBlank()) {
+            // 同步跳转带上 orderId，方便前端在支付宝跳回后仍能定位订单
+            String returnUrl = props.getReturnUrl();
+            returnUrl += (returnUrl.contains("?") ? "&" : "?") + "orderId=" + order.getId();
+            params.put("return_url", returnUrl);
+        }
         applyEncryption(params, objectMapper.writeValueAsString(biz), props);
         String url = props.getServerUrl() + "?" + buildSignedQuery(params, props.getPrivateKey());
         log.info("[Pay] page.pay redirect url: {}", url);
