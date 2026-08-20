@@ -34,8 +34,8 @@
   animation: gg-fade-up 0.45s ease both;
 }
 @keyframes gg-fade-up {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .page-header {
@@ -359,17 +359,21 @@ html, body {
 
 /* ---- 弹窗：强制屏幕正中，内容超高时在弹窗内部滚动，无需拖动页面 ---- */
 /* ---- 弹窗：独立最前层面，固定屏幕正中（不改遮罩布局，避免影响抽屉/消息等其它弹层） ---- */
+/* ---- 弹窗：独立最前层面，固定屏幕正中（任何情况可见，独立于页面） ---- */
 .el-overlay {
-  /* 遮罩保持默认 fixed 全屏 + 高 z-index，作为最前独立层 */
+  position: fixed !important;
+  inset: 0 !important;
   z-index: 3000 !important;
+  background: rgba(5, 10, 24, 0.72);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 .el-overlay-dialog > .el-dialog {
-  /* 固定定位到视口正中：不随页面滚动、不需要拖动 */
   margin: 0 !important;
-  position: fixed;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  position: fixed !important;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
   max-width: calc(100vw - 40px);
   max-height: calc(100vh - 32px);
   overflow: auto;
