@@ -90,6 +90,8 @@
             this.fetchOrders()
         },
         mounted() {
+            // 支付成功后带 status=1 跳转，自动切到“已支付”页签
+            this.applyStatusQuery()
             this.fetchOrders()
             // 实时同步：每 3 秒静默刷新（支付/退款等状态变更即时可见）
             this.startAutoRefresh()
@@ -103,6 +105,11 @@
         // ✅ 监听路由参数变化，支付成功后刷新
         watch: {
             '$route.query.refreshed'() {
+                this.fetchOrders()
+            },
+            // 支付成功后带 status=1 跳转，自动切到“已支付”页签
+            '$route.query.status'() {
+                this.applyStatusQuery()
                 this.fetchOrders()
             }
         },
@@ -122,6 +129,15 @@
                 }
             },
             // ====== 实时同步：自动轮询 ======
+            // 读取路由 status 参数并切换页签（支付成功 -> 已支付）
+            applyStatusQuery() {
+                const raw = this.$route.query.status
+                if (raw === undefined || raw === null || raw === '') return
+                const n = Number(raw)
+                if (!Number.isNaN(n) && n >= -1 && n <= 5) {
+                    this.activeStatus = n
+                }
+            },
             startAutoRefresh() {
                 this.stopAutoRefresh()
                 this.refreshTimer = setInterval(() => {

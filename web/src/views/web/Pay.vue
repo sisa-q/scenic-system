@@ -72,7 +72,7 @@
                 try {
                     const res = await alipayReturn(q)
                     showToast('支付成功')
-                    this.$router.replace({ path: '/orders', query: { refreshed: Date.now() } })
+                    this.$router.replace({ path: '/orders', query: { refreshed: Date.now(), status: 1 } })
                 } catch (e) {
                     // 验签失败/尚未支付成功/异步回调未到达：回到支付页，可重新发起或稍后查看订单
                     showToast(e.msg || e.message || '支付结果确认中，请稍后在订单列表查看')
@@ -107,7 +107,7 @@
                 try {
                     await mockConfirmPay(this.orderId)
                     showToast('支付成功')
-                    this.$router.replace({ path: '/orders', query: { refreshed: Date.now() } })
+                    this.$router.replace({ path: '/orders', query: { refreshed: Date.now(), status: 1 } })
                 } catch (e) {
                     showToast(e.msg || e.message || '确认失败')
                 } finally {
