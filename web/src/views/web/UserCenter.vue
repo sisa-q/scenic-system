@@ -29,12 +29,39 @@
     export default {
         name: 'UserCenter',
         components: { TabBar },
+        data() {
+            return {
+                refreshTimer: null
+            }
+        },
         computed: {
             userInfo() {
                 return useUserStore().userInfo || {}
             }
         },
         methods: {
+            // ====== 个人账号数据实时同步：自动轮询 ======
+            startAutoRefresh() {
+                this.stopAutoRefresh()
+                this.refreshTimer = setInterval(async () => {
+                    try {
+                        await useUserStore().getUserInfo({ silent: true })
+                    } catch (e) {
+                        // 静默失败，避免频繁弹窗
+                    }
+                }, 5000)
+            },
+            stopAutoRefresh() {
+                if (this.refreshTimer) {
+                    clearInterval(this.refreshTimer)
+                    this.refreshTimer = null
+                }
+            },
+            onVisibilityChange() {
+                if (!document.hidden) {
+                    useUserStore().getUserInfo({ silent: true }).catch(() => {})
+                }
+            },
             goProfile() {
                 const token = localStorage.getItem('token')
                 if (!token) {
@@ -80,8 +107,17 @@
             const token = localStorage.getItem('token')
             if (!token) {
                 this.$router.replace('/login')
+                return
             }
-        }
+            // 个人账号数据实时同步：每 5 秒静默刷新用户信息
+            this.startAutoRefresh()
+            document.addEventListener('visibilitychange', this.onVisibilityChange)
+        },
+        // 页面卸载时停止轮询
+        beforeUnmount() {
+            this.stopAutoRefresh()
+            document.removeEventListener('visibilitychange', this.onVisibilityChange)
+        },
     }
 </script>
 

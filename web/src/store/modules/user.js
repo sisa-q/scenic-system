@@ -16,8 +16,8 @@ export const useUserStore = defineStore('user', {
             }
             return res
         },
-        async getUserInfo() {
-            const res = await getUserInfoApi()
+        async getUserInfo(options) {
+            const res = await getUserInfoApi(options)
             this.userInfo = res.data || {}
             if (this.userInfo.role) {
                 localStorage.setItem('userRole', this.userInfo.role)

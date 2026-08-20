@@ -10,8 +10,8 @@ export function loginApi(data) {
 /**
  * 获取当前用户信息
  */
-export function getUserInfoApi() {
-    return request.get('/user/info')
+export function getUserInfoApi(options) {
+    return request.get('/user/info', { ...options })
 }
 
 /**

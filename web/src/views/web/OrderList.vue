@@ -73,7 +73,8 @@
             return {
                 activeStatus: -1,
                 list: [],
-                selectedIds: []
+                selectedIds: [],
+                refreshTimer: null
             }
         },
         computed: {
@@ -90,6 +91,14 @@
         },
         mounted() {
             this.fetchOrders()
+            // 实时同步：每 3 秒静默刷新（支付/退款等状态变更即时可见）
+            this.startAutoRefresh()
+            document.addEventListener('visibilitychange', this.onVisibilityChange)
+        },
+        // 页面卸载时停止轮询，避免资源泄漏
+        beforeUnmount() {
+            this.stopAutoRefresh()
+            document.removeEventListener('visibilitychange', this.onVisibilityChange)
         },
         // ✅ 监听路由参数变化，支付成功后刷新
         watch: {
@@ -98,15 +107,37 @@
             }
         },
         methods: {
-            async fetchOrders() {
+            async fetchOrders(silent = false) {
                 const status = this.activeStatus === -1 ? undefined : this.activeStatus
                 try {
-                    const res = await getOrderList({ status })
+                    const res = await getOrderList({ status }, { silent })
                     this.list = res.data || []
-                    this.selectedIds = []
+                    // 静默轮询不清空勾选，避免影响批量隐藏操作
+                    if (!silent) {
+                        this.selectedIds = []
+                    }
                 } catch (e) {
                     console.error('获取订单列表失败:', e)
-                    showToast('获取订单列表失败')
+                    if (!silent) showToast('获取订单列表失败')
+                }
+            },
+            // ====== 实时同步：自动轮询 ======
+            startAutoRefresh() {
+                this.stopAutoRefresh()
+                this.refreshTimer = setInterval(() => {
+                    this.fetchOrders(true)
+                }, 3000)
+            },
+            stopAutoRefresh() {
+                if (this.refreshTimer) {
+                    clearInterval(this.refreshTimer)
+                    this.refreshTimer = null
+                }
+            },
+            onVisibilityChange() {
+                // 切回页面时立即刷新一次
+                if (!document.hidden) {
+                    this.fetchOrders(true)
                 }
             },
             onTabChange() {

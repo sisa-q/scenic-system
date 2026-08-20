@@ -140,7 +140,8 @@
                 isEditMode: false,
                 // 待支付倒计时（限时 30 分钟，与后端 pay.pay-timeout-minutes 一致）
                 remainSeconds: 30 * 60,
-                countdownTimer: null
+                countdownTimer: null,
+                refreshTimer: null
             }
         },
         computed: {
@@ -203,16 +204,22 @@
             }
             await this.fetchOrderDetail(orderId)
             await this.fetchEvaluation(orderId)
+            // 实时同步：每 3 秒静默刷新订单状态（支付/退款状态变更即时可见）
+            this.startAutoRefresh()
+            document.addEventListener('visibilitychange', this.onVisibilityChange)
         },
         beforeUnmount() {
             if (this.countdownTimer) {
                 clearInterval(this.countdownTimer)
                 this.countdownTimer = null
             }
+            // 页面卸载时停止轮询，避免资源泄漏
+            this.stopAutoRefresh()
+            document.removeEventListener('visibilitychange', this.onVisibilityChange)
         },
         methods: {
             // 获取订单详情（真实 API）
-            async fetchOrderDetail(orderId) {
+            async fetchOrderDetail(orderId, silent = false) {
                 try {
                     const res = await getOrderDetail(orderId)
                     const d = res.data || {}
@@ -230,10 +237,30 @@
                     }
                 } catch (e) {
                     console.error('获取订单详情失败', e)
-                    showToast('获取订单详情失败')
+                    if (!silent) showToast('获取订单详情失败')
                 }
             },
             // 获取评价
+            // ====== 实时同步：自动轮询 ======
+            startAutoRefresh() {
+                this.stopAutoRefresh()
+                const orderId = this.$route.params.id || this.$route.query.id
+                this.refreshTimer = setInterval(() => {
+                    if (orderId) this.fetchOrderDetail(orderId, true)
+                }, 3000)
+            },
+            stopAutoRefresh() {
+                if (this.refreshTimer) {
+                    clearInterval(this.refreshTimer)
+                    this.refreshTimer = null
+                }
+            },
+            onVisibilityChange() {
+                if (!document.hidden) {
+                    const orderId = this.$route.params.id || this.$route.query.id
+                    if (orderId) this.fetchOrderDetail(orderId, true)
+                }
+            },
             async fetchEvaluation(orderId) {
                 try {
                     const res = await getOrderEvaluation(orderId)

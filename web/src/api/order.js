@@ -1,11 +1,11 @@
 import request from './request'
 
-export function getOrderList(params) {
-    return request.get('/order/list', { params })
+export function getOrderList(params, options) {
+    return request.get('/order/list', { params, ...options })
 }
 
-export function getOrderDetail(id) {
-    return request.get(`/order/detail/${id}`)
+export function getOrderDetail(id, options) {
+    return request.get(`/order/detail/${id}`, { ...options })
 }
 
 export function createOrder(data) {

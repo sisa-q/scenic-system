@@ -7,7 +7,7 @@ const request = axios.create({
     timeout: 10000
 })
 
-// 请求拦截器：携带 token
+// 请求拦截器：自动携带 token
 request.interceptors.request.use(
     config => {
         const token = localStorage.getItem('token')
@@ -30,20 +30,21 @@ function handleAuthExpired() {
     }
 }
 
-// 响应拦截器：统一处理错误
+// 响应拦截器：统一处理业务码。传 { silent: true } 时静默（轮询自动刷新使用，避免频繁弹窗）
 request.interceptors.response.use(
     response => {
         const res = response.data
+        const silent = response.config && response.config.silent
         if (res.code === 401) {
             handleAuthExpired()
             return Promise.reject(res)
         }
         if (res.code === 403) {
-            showToast(res.msg || '无权限访问')
+            if (!silent) showToast(res.msg || '无权限访问')
             return Promise.reject(res)
         }
         if (res.code !== 200) {
-            showToast(res.msg || '请求失败')
+            if (!silent) showToast(res.msg || '请求失败')
             return Promise.reject(res)
         }
         return res
@@ -51,12 +52,13 @@ request.interceptors.response.use(
     error => {
         const status = error.response?.status
         const msg = error.response?.data?.msg
+        const silent = error.config && error.config.silent
         if (status === 401) {
             handleAuthExpired()
         } else if (status === 403) {
-            showToast(msg || '无权限访问')
+            if (!silent) showToast(msg || '无权限访问')
         } else {
-            showToast(msg || error.message || '网络错误')
+            if (!silent) showToast(msg || error.message || '网络异常')
         }
         return Promise.reject(error)
     }
