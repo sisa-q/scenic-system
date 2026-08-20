@@ -223,7 +223,7 @@
     .order-list {
         padding-bottom: 60px;
         min-height: 100vh;
-        background: transparent;
+        background: linear-gradient(160deg, #070b18 0%, #0c1730 55%, #0a1226 100%);
     }
 
     /* 订单页固定导航栏：吸顶 + 深色背景全覆盖 */

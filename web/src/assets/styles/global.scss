@@ -144,7 +144,7 @@ body {
 /* ---- 导航栏 / 底部栏：深色科幻（管理端同风格） ---- */
 .van-nav-bar { background: rgba(10, 16, 34, 0.92) !important; border-bottom: 1px solid rgba(120,170,255,0.12); }
 .van-nav-bar__title, .van-nav-bar .van-icon, .van-nav-bar__text { color: #e8eefc !important; }
-.van-tabbar { background: rgba(10, 16, 34, 0.94) !important; border-top: 1px solid rgba(120,170,255,0.12); }
+.van-tabbar { --van-tabbar-background: rgba(10,16,34,0.94) !important; background: rgba(10, 16, 34, 0.96) !important; border-top: 1px solid rgba(120,170,255,0.12); }
 .van-tabbar-item { color: #7d8db0 !important; }
 .van-tabbar-item--active { color: #4da3ff !important; }
 .van-tabbar-item--active .van-icon { color: #4da3ff !important; }
