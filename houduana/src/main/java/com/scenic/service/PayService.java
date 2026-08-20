@@ -13,5 +13,7 @@ public interface PayService {
     PayResult mockConfirm(Long orderId, Long operatorId, String role);
     /** 前端刷新支付状态兜底：对待支付订单主动查询支付宝并确认（页面按模拟支付逻辑确认订单） */
     PayResult refreshOrderPaymentStatus(Long orderId, Long operatorId, String role);
+    /** 列表页兜底：把当前用户（或管理员全部）的“待支付”订单主动查支付宝并确认，返回确认笔数 */
+    int refreshPendingOrders(Long userId, String role);
     void refund(Order order);
 }
