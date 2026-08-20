@@ -226,14 +226,32 @@
         background: transparent;
     }
 
+    /* 订单页固定导航栏：吸顶 + 深色背景全覆盖 */
     .order-header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background: #fff;
+        background: rgba(10, 16, 34, 0.94);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
         padding-right: 12px;
-        border-bottom: 1px solid #eee;
+        border-bottom: 1px solid rgba(120, 170, 255, 0.16);
         min-height: 50px;
+    }
+    .order-header .van-tabs {
+        flex: 1;
+    }
+    /* 只在本页作用域内让状态 tab 深色化 */
+    .order-header :deep(.van-tabs__wrap) { background: transparent !important; }
+    .order-header :deep(.van-tab) { color: #8fa0c2 !important; }
+    .order-header :deep(.van-tab--active) { color: #4da3ff !important; }
+    .order-header :deep(.van-tabs__line) { background: #4da3ff !important; }
+    .delete-btn {
+        flex-shrink: 0;
+        margin-left: 8px;
     }
     .order-header .van-tabs {
         flex: 1;
@@ -248,13 +266,17 @@
         justify-content: space-between;
         align-items: center;
         padding: 10px 16px;
-        background: #f0f7ff;
-        border-bottom: 1px solid #d9e8ff;
+        background: rgba(16, 28, 56, 0.85);
+        border-bottom: 1px solid rgba(120, 170, 255, 0.14);
         margin: 0 0 4px 0;
     }
     .toolbar-info {
         font-size: 14px;
-        color: #323233;
+        color: #aebcd8;
+    }
+    .toolbar-info strong {
+        color: #4da3ff;
+        font-size: 16px;
     }
     .toolbar-info strong {
         color: #1989fa;
