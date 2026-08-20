@@ -600,7 +600,7 @@ export function initScene(containerElement) {
 // 故宫建筑群 · 三级 HLOD 程序化建模
 // ============================================================
 function stdMat(color, roughness, metalness) {
-    return new THREE.MeshStandardMaterial({ color, roughness, metalness })
+    return new THREE.MeshStandardMaterial({ color, roughness, metalness, side: THREE.DoubleSide })
 }
 
 function buildHighLOD(dim) {
@@ -655,7 +655,7 @@ function buildHighLOD(dim) {
     const roofR = Math.max(w, d) * 0.62
     const roofH = h * 0.22
     const roof = new THREE.Mesh(new THREE.ConeGeometry(roofR, roofH, 4), stdMat(MAT_COLORS.roof, 0.4, 0.35))
-    roof.position.y = 0.06 + wallH + 0.03 + roofH / 2 - 0.01
+    roof.position.y = 0.06 + wallH + 0.03 + roofH / 2 + 0.01
     roof.rotation.y = Math.PI / 4
     roof.castShadow = true
     g.add(roof)
@@ -666,7 +666,7 @@ function buildHighLOD(dim) {
         const roof2R = roofR * 0.55
         const roof2H = h * 0.16
         const roof2 = new THREE.Mesh(new THREE.ConeGeometry(roof2R, roof2H, 4), stdMat(MAT_COLORS.roof, 0.4, 0.35))
-        roof2.position.y = roof.position.y + roofH / 2 + roof2H / 2 - 0.02
+        roof2.position.y = roof.position.y + roofH / 2 + roof2H / 2 + 0.01
         roof2.rotation.y = Math.PI / 4
         roof2.castShadow = true
         g.add(roof2)
@@ -702,7 +702,7 @@ function buildMidLOD(dim) {
     const roofR = Math.max(w, d) * 0.58
     const roofH = h * 0.3
     const roof = new THREE.Mesh(new THREE.ConeGeometry(roofR, roofH, 4), stdMat(MAT_COLORS.roof, 0.4, 0.3))
-    roof.position.y = 0.05 + wallH + roofH / 2 - 0.01
+    roof.position.y = 0.05 + wallH + roofH / 2 + 0.01
     roof.rotation.y = Math.PI / 4
     roof.castShadow = true
     g.add(roof)
