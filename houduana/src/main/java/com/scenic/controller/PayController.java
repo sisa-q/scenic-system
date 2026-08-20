@@ -36,17 +36,6 @@ public class PayController {
     }
 
     /** 模拟支付确认（开发/演示用） */
-    /** 前端“刷新支付状态”兜底：对待支付订单主动查询支付宝并确认（订单所有者/管理员，需登录） */
-    @PostMapping("/refresh/{id}")
-    public Result refresh(@PathVariable Long id,
-                          @RequestHeader(value = "Authorization", required = false) String authHeader) {
-        try {
-            return Result.success(payService.refreshOrderPaymentStatus(id, parseUserId(authHeader), parseRole(authHeader)));
-        } catch (RuntimeException e) {
-            return Result.error(e.getMessage());
-        }
-    }
-
     @PostMapping("/mock/confirm/{id}")
     public Result mockConfirm(@PathVariable Long id,
                               @RequestHeader(value = "Authorization", required = false) String authHeader) {
@@ -58,26 +47,6 @@ public class PayController {
             return Result.success(payService.mockConfirm(id, userId, "user"));
         } catch (RuntimeException e) {
             return Result.error(e.getMessage());
-        }
-    }
-
-    // ====== 辅助解析 ======
-    private Long parseUserId(String authHeader) {
-        try {
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) return null;
-            return Long.parseLong(jwtUtil.getUserIdFromToken(authHeader.substring(7)));
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    private String parseRole(String authHeader) {
-        try {
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) return "user";
-            String role = jwtUtil.getRoleFromToken(authHeader.substring(7));
-            return role != null ? role : "user";
-        } catch (Exception e) {
-            return "user";
         }
     }
 }
