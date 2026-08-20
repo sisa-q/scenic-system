@@ -741,13 +741,13 @@ function createGugongBuildings() {
     // 远景：GPU 硬件实例化（InstancedMesh，单 Draw Call 绘制全部远景建筑）
     const lowGeo = new THREE.BoxGeometry(1, 1, 1)
     const lowMat = new THREE.MeshStandardMaterial({ color: 0x994433, roughness: 0.8, metalness: 0.05 })
+    const ids = Object.keys(GUGONG_LAYOUT)
+    lowInstances = new THREE.InstancedMesh(lowGeo, lowMat, ids.length)
+    lowInstances.frustumCulled = false
     const lowRoofGeo = new THREE.ConeGeometry(0.8, 0.55, 4)
     const lowRoofMat = new THREE.MeshStandardMaterial({ color: MAT_COLORS.roof, roughness: 0.5, metalness: 0.3, side: THREE.DoubleSide })
     lowRoofInstances = new THREE.InstancedMesh(lowRoofGeo, lowRoofMat, ids.length)
     lowRoofInstances.frustumCulled = false
-    const ids = Object.keys(GUGONG_LAYOUT)
-    lowInstances = new THREE.InstancedMesh(lowGeo, lowMat, ids.length)
-    lowInstances.frustumCulled = false
 
     ids.forEach((id, index) => {
         const b = GUGONG_LAYOUT[id]
