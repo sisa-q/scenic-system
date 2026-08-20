@@ -9,8 +9,17 @@
                 <el-button type="primary" @click="handleAdd">发布公告</el-button>
             </div>
         </div>
+        <!-- 智能筛选工具栏 -->
+        <div class="admin-toolbar">
+            <el-input v-model="keyword" placeholder="搜索公告标题" clearable />
+            <el-select v-model="statusFilter" placeholder="全部状态" clearable style="width:130px;">
+                <el-option label="已发布" :value="1" />
+                <el-option label="草稿" :value="0" />
+            </el-select>
+            <span style="color:#8fa0c2;font-size:12px;">当前页 {{ filteredList.length }} 条</span>
+        </div>
         <div class="notice-table-wrap">
-        <el-table :data="tableData" height="100%" style="margin-top:0;" border>
+        <el-table :data="filteredList" height="100%" style="margin-top:0;" border>
             <el-table-column prop="id" label="ID" width="80" />
             <el-table-column prop="title" label="标题" />
             <el-table-column prop="publishTime" label="发布时间" width="180" />
@@ -75,11 +84,23 @@
         data() {
             return {
                 tableData: [],
+                keyword: '',
+                statusFilter: undefined,
                 page: 1,
                 size: 10,
                 total: 0,
                 dialogVisible: false,
                 form: { title: '', content: '', status: 1 }
+            }
+        },
+        computed: {
+            filteredList() {
+                const kw = (this.keyword || '').trim().toLowerCase()
+                return this.tableData.filter(row => {
+                    if (this.statusFilter !== undefined && this.statusFilter !== null && row.status !== this.statusFilter) return false
+                    if (!kw) return true
+                    return [row.title].some(v => v && String(v).toLowerCase().includes(kw))
+                })
             }
         },
         mounted() {
@@ -90,7 +111,7 @@
                 try {
                     const res = await getNoticeList({ page: this.page, size: this.size })
                     const d = res.data || {}
-                    this.tableData = (d.list !== undefined ? d.list : d) || []
+                    this.tableData = (d.list !== undefined ? d.list : d || []).slice().sort((a, b) => (b.id || 0) - (a.id || 0))
                     this.total = d.total !== undefined ? Number(d.total) : this.tableData.length
                 } catch (e) {
                     console.error('获取公告失败:', e)

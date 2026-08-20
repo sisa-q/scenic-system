@@ -9,8 +9,16 @@
                 <el-button type="primary" @click="handleAdd">新增票种</el-button>
             </div>
         </div>
-        <div class="table-wrapper">
-            <el-table :data="tableData" style="margin-top:0;" height="100%" border>
+        <!-- 智能筛选工具栏 -->
+        <div class="admin-toolbar">
+            <el-input v-model="keyword" placeholder="搜索票种 / 景点" clearable />
+            <el-select v-model="spotFilter" placeholder="按景点分类" clearable style="width:150px;">
+                <el-option v-for="item in spotOptions" :key="item.id" :label="item.name" :value="item.id" />
+            </el-select>
+            <span style="color:#8fa0c2;font-size:12px;">共 {{ filteredList.length }} 条</span>
+        </div>
+<div class="table-wrapper admin-list-card">
+            <el-table :data="filteredList" style="margin-top:0;" height="100%" border>
             <el-table-column prop="id" label="ID" width="80" />
             <el-table-column prop="spotName" label="所属景点" />
             <el-table-column prop="name" label="票种名称" />
@@ -56,9 +64,21 @@
         data() {
             return {
                 tableData: [],
+                keyword: '',
+                spotFilter: undefined,
                 spotOptions: [],
                 dialogVisible: false,
                 form: { spotId: '', name: '', price: 0, totalQuota: 0, refundRule: '' }
+            }
+        },
+        computed: {
+            filteredList() {
+                const kw = (this.keyword || '').trim().toLowerCase()
+                return this.tableData.filter(row => {
+                    if (this.spotFilter !== undefined && this.spotFilter !== null && row.spotId !== this.spotFilter) return false
+                    if (!kw) return true
+                    return [row.name, row.spotName].some(v => v && String(v).toLowerCase().includes(kw))
+                })
             }
         },
         mounted() {
@@ -69,7 +89,7 @@
             async fetchList() {
                 try {
                     const res = await getTicketList()
-                    this.tableData = res.data || []
+                    this.tableData = (res.data || []).slice().sort((a, b) => (b.id || 0) - (a.id || 0))
                 } catch (e) {
                     console.error('获取票种失败:', e)
                 }

@@ -83,3 +83,60 @@ a:hover {
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.06);
   border-radius: 8px;
 }
+
+/* ============================================================
+   v2：科幻智能 × 摄影艺术 全局增强（2026-08-20 前端优化）
+   ============================================================ */
+:root {
+  --gg-deep: #070b18;
+  --gg-blue: #4da3ff;
+  --gg-violet: #8c5aff;
+  --gg-green: #35d18b;
+  --gg-text: #e8eefc;
+  --gg-text-2: #8fa0c2;
+}
+
+/* 页面背景：深邃星云渐变 */
+body {
+  background:
+    radial-gradient(1100px 520px at 15% -5%, rgba(52, 130, 255, 0.12), transparent 60%),
+    radial-gradient(900px 460px at 100% 8%, rgba(150, 96, 255, 0.10), transparent 55%),
+    linear-gradient(165deg, #070b18 0%, #0c1730 55%, #0a1226 100%);
+  min-height: 100vh;
+}
+
+/* 通用卡片：玻璃拟态 + 科幻描边 */
+.gg-card {
+  border-radius: 14px;
+  background: rgba(16, 28, 56, 0.66);
+  border: 1px solid rgba(120, 170, 255, 0.16);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.45);
+}
+
+/* Vant 卡片/单元格：浅色改深色玻璃 */
+.van-card, .van-cell, .van-cell-group {
+  background: rgba(16, 28, 56, 0.66) !important;
+  color: var(--gg-text) !important;
+}
+.van-cell__title, .van-cell__value, .van-cell-group__title {
+  color: var(--gg-text-2) !important;
+}
+.van-cell::after { border-color: rgba(120, 170, 255, 0.10) !important; }
+
+/* 主按钮/品牌色 */
+:root {
+  --van-primary-color: #4da3ff;
+  --van-success-color: #35d18b;
+  --van-danger-color: #ff6b6b;
+}
+
+/* 深色滚动条 */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-thumb { background: rgba(120, 170, 255, 0.35); border-radius: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* 页面统一过渡 */
+.page-fade-enter-active, .page-fade-leave-active { transition: opacity .2s; }
+.page-fade-enter-from, .page-fade-leave-to { opacity: 0; }

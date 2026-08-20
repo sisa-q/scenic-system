@@ -290,3 +290,106 @@
 .el-loading-mask {
   border-radius: 12px;
 }
+
+/* ============================================================
+   v2：科幻智能 × 摄影艺术 增强（2026-08-20 前端优化）
+   ============================================================ */
+
+/* ---- 管理端背景：深邃星云渐变 ---- */
+html, body {
+  background: #0b1226;
+}
+.admin-page {
+  padding: 20px;
+  background:
+    radial-gradient(1100px 520px at 12% -5%, rgba(52, 120, 255, 0.10), transparent 60%),
+    radial-gradient(900px 460px at 100% 5%, rgba(150, 96, 255, 0.08), transparent 55%),
+    linear-gradient(165deg, #0b1226 0%, #101a33 55%, #0c1328 100%);
+  min-height: calc(100vh - 60px);
+}
+.page-title {
+  color: #eef3ff;
+  text-shadow: 0 0 18px rgba(90, 160, 255, 0.35);
+}
+.page-subtitle { color: #7d8db0; }
+
+/* ---- 工具栏（搜索/筛选）卡片 ---- */
+.admin-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  border-radius: 12px;
+  background: rgba(18, 32, 60, 0.62);
+  border: 1px solid rgba(120, 170, 255, 0.14);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.admin-toolbar .el-input { width: 220px; }
+
+/* ---- 列表卡片（表格容器） ---- */
+.admin-list-card {
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(16, 28, 56, 0.55);
+  border: 1px solid rgba(120, 170, 255, 0.14);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.4);
+}
+
+/* ---- 表格：暗色表头 + 发光行 ---- */
+.admin-list-card .el-table {
+  --el-table-bg-color: rgba(12, 22, 46, 0.55);
+  --el-table-tr-bg-color: rgba(12, 22, 46, 0.55);
+  --el-table-header-bg-color: rgba(30, 50, 90, 0.85);
+  --el-table-border-color: rgba(120, 170, 255, 0.10);
+  --el-table-row-hover-bg-color: rgba(70, 140, 255, 0.12);
+  color: #cfdbef;
+  background: transparent;
+}
+.admin-list-card .el-table th.el-table__cell {
+  color: #e6eeff;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+.admin-list-card .el-table .el-table__cell { background: transparent; }
+
+/* ---- 弹窗：强制页面正中间，超高可滚动，不跑出可视区 ---- */
+.el-overlay { display: flex; align-items: center; justify-content: center; }
+.el-overlay-dialog {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+}
+.el-overlay-dialog .el-dialog {
+  margin: 0 !important;
+  max-width: calc(100vw - 40px);
+  max-height: 90vh;
+  overflow: auto;
+  border-radius: 14px;
+  border: 1px solid rgba(120, 170, 255, 0.18);
+  background: linear-gradient(165deg, #101b38, #0c1428);
+  color: #e6eeff;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6), 0 0 40px rgba(70, 140, 255, 0.12);
+}
+.el-overlay-dialog .el-dialog__title { color: #eef3ff; letter-spacing: 2px; }
+.el-overlay-dialog .el-dialog__headerbtn .el-dialog__close { color: #8fa0c2; }
+.el-overlay-dialog .el-form-item__label { color: #a9b8d6; }
+.el-overlay-dialog .el-input__wrapper,
+.el-overlay-dialog .el-textarea__inner {
+  background: rgba(8, 16, 34, 0.7);
+  box-shadow: 0 0 0 1px rgba(120, 170, 255, 0.2) inset;
+}
+.el-overlay-dialog .el-input__inner { color: #e6eeff; }
+
+/* ---- 分页 ---- */
+.el-pagination { color: #aebcd8; --el-pagination-bg-color: transparent; }
+.el-pagination button, .el-pagination .el-pager li { background: transparent; color: #aebcd8; }
+.el-pagination .el-pager li.is-active { color: #4da3ff; }
+
+/* ---- 空状态/提示文案颜色 ---- */
+.el-table .el-table__empty-text { color: #6b7a94; }

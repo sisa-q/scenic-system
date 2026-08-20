@@ -147,7 +147,7 @@
                         endDate: this.searchForm.dateRange?.[1] || undefined
                     }
                     const res = await getEvaluationList(params)
-                    this.tableData = res.data.list || []
+                    this.tableData = (res.data.list || []).slice().sort((a, b) => (b.id || 0) - (a.id || 0))
                     this.total = res.data.total || 0
                 } catch (error) {
                     ElMessage.error('获取评价列表失败：' + error.message)

@@ -11,7 +11,17 @@
         </div>
 
         <!-- 数据表格 -->
-        <el-table :data="tableData" style="margin-top: 0" border>
+        <!-- 智能筛选工具栏 -->
+        <div class="admin-toolbar">
+            <el-input v-model="keyword" placeholder="搜索票种 / 时间段" clearable />
+            <el-select v-model="statusFilter" placeholder="全部状态" clearable style="width:130px;">
+                <el-option label="开放" :value="1" />
+                <el-option label="关闭" :value="0" />
+            </el-select>
+            <span style="color:#8fa0c2;font-size:12px;">共 {{ filteredList.length }} 条</span>
+        </div>
+        <div class="admin-list-card">
+        <el-table :data="filteredList" style="margin-top: 0" border>
             <el-table-column prop="id" label="ID" width="80" />
             <el-table-column prop="policyName" label="所属票种" />
             <el-table-column prop="startTime" label="开始时间" width="180" />
@@ -32,6 +42,7 @@
                 </template>
             </el-table-column>
         </el-table>
+        </div>
 
         <!-- 弹窗 -->
         <el-dialog
@@ -108,6 +119,8 @@
         data() {
             return {
                 tableData: [],
+                keyword: '',
+                statusFilter: undefined,
                 policyOptions: [],
                 dialogVisible: false,
                 saving: false,
@@ -117,6 +130,16 @@
         computed: {
             dialogTitle() {
                 return this.form.id ? '编辑时段' : '新增时段'
+            }
+        },
+        computed: {
+            filteredList() {
+                const kw = (this.keyword || '').trim().toLowerCase()
+                return this.tableData.filter(row => {
+                    if (this.statusFilter !== undefined && this.statusFilter !== null && row.status !== this.statusFilter) return false
+                    if (!kw) return true
+                    return [row.policyName, row.startTime, row.endTime].some(v => v && String(v).toLowerCase().includes(kw))
+                })
             }
         },
         mounted() {
@@ -146,7 +169,7 @@
             async fetchList() {
                 try {
                     const res = await getSlots({})
-                    this.tableData = res.data || []
+                    this.tableData = (res.data || []).slice().sort((a, b) => (b.id || 0) - (a.id || 0))
                 } catch (e) {
                     console.error('获取时段失败:', e)
                 }
