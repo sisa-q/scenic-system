@@ -330,30 +330,30 @@ html, body {
 .admin-toolbar .el-input { width: 220px; }
 
 /* ---- 列表卡片（表格容器） ---- */
+/* ---- 列表卡片（表格容器）：白色列表 + 深色页面背景（与订单管理一致） ---- */
 .admin-list-card {
   border-radius: 12px;
   overflow: hidden;
-  background: rgba(16, 28, 56, 0.55);
-  border: 1px solid rgba(120, 170, 255, 0.14);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.4);
+  background: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.38);
 }
 
-/* ---- 表格：暗色表头 + 发光行 ---- */
+/* ---- 表格：白色底、深色文字、浅色表头 ---- */
 .admin-list-card .el-table {
-  --el-table-bg-color: rgba(12, 22, 46, 0.55);
-  --el-table-tr-bg-color: rgba(12, 22, 46, 0.55);
-  --el-table-header-bg-color: rgba(30, 50, 90, 0.85);
-  --el-table-border-color: rgba(120, 170, 255, 0.10);
-  --el-table-row-hover-bg-color: rgba(70, 140, 255, 0.12);
-  color: #cfdbef;
-  background: transparent;
+  --el-table-bg-color: #ffffff;
+  --el-table-tr-bg-color: #ffffff;
+  --el-table-header-bg-color: #f5f7fa;
+  --el-table-header-text-color: #2b3a55;
+  --el-table-border-color: #e4e7ed;
+  --el-table-row-hover-bg-color: #f2f6fd;
+  --el-table-text-color: #3a4a66;
+  color: #3a4a66;
+  background: #ffffff;
 }
 .admin-list-card .el-table th.el-table__cell {
-  color: #e6eeff;
+  color: #2b3a55;
   font-weight: 600;
-  letter-spacing: 1px;
 }
 .admin-list-card .el-table .el-table__cell { background: transparent; }
 
@@ -388,7 +388,7 @@ html, body {
   min-height: 0;
 }
 /* ---- 分页 ---- */
-.el-pagination { color: #aebcd8; --el-pagination-bg-color: transparent; }
+  .el-pagination { color: #2b3a55; }
 .el-pagination button, .el-pagination .el-pager li { background: transparent; color: #aebcd8; }
 .el-pagination .el-pager li.is-active { color: #4da3ff; }
 
