@@ -92,8 +92,30 @@ public class AlipaySigner {
         return sb.toString();
     }
 
+    /**
+     * 请求签名内容：只剔除 sign，保留 sign_type。
+     * 沙箱网关实测：网关请求验签字符串包含 sign_type=RSA2，签名时必须将其计入。
+     */
+    public String buildRequestContent(Map<String, String> params) {
+        List<String> keys = new ArrayList<>(params.keySet());
+        Collections.sort(keys);
+        StringBuilder sb = new StringBuilder();
+        boolean first = true;
+        for (String k : keys) {
+            if ("sign".equals(k)) continue;
+            String v = params.get(k);
+            if (v == null || v.isEmpty()) continue;
+            if (!first) sb.append("&");
+            sb.append(k).append("=").append(v);
+            first = false;
+        }
+        return sb.toString();
+    }
+
     public boolean verifyNotify(Map<String, String> params, String sign, String alipayPublicKey) {
-        return verify(buildContent(params), sign, alipayPublicKey);
+        // 通知/跳转验签：兼容两种规则（先按含 sign_type 验，失败再按排除 sign_type 验）
+        return verify(buildRequestContent(params), sign, alipayPublicKey)
+                || verify(buildContent(params), sign, alipayPublicKey);
     }
 
     /** 支付宝接口内容加密：AES 加密（AES/CBC/PKCS5Padding，IV 全 0，输出 Base64） */
@@ -244,7 +266,7 @@ public class AlipaySigner {
      * 而 sign（待计算的签名值）不参与输出，最后单独追加。
      */
     private String buildSignedQuery(Map<String, String> params, String privateKey) throws Exception {
-        String content = buildContent(params);
+        String content = buildRequestContent(params);
         String sign = sign(content, privateKey);
         log.info("[Pay] sign content: {}", content);
         List<String> keys = new ArrayList<>(params.keySet());

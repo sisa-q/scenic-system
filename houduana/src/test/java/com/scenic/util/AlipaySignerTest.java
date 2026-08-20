@@ -111,7 +111,7 @@ class AlipaySignerTest {
         assertThat(signer.aesDecrypt(cipher, AES_KEY)).contains("\"out_trade_no\":\"NO001\"");
 
         String sign = query.remove("sign");
-        assertThat(signer.verify(signer.buildContent(query), sign, pemPublic(kp.getPublic()))).isTrue();
+        assertThat(signer.verify(signer.buildRequestContent(query), sign, pemPublic(kp.getPublic()))).isTrue();
     }
 
     @Test
@@ -154,5 +154,19 @@ class AlipaySignerTest {
 
         assertThat(derived).isNotBlank();
         assertThat(AlipaySigner.base64Body(pemPublic(kp.getPublic()))).isEqualTo(derived);
+    }
+
+    @Test
+    @DisplayName("请求签名串保留 sign_type（网关实测参与请求验签）")
+    void buildRequestContent_keepsSignType() {
+        AlipaySigner signer = new AlipaySigner();
+        Map<String, String> params = new HashMap<>();
+        params.put("b", "2");
+        params.put("a", "1");
+        params.put("sign", "x");
+        params.put("sign_type", "RSA2");
+
+        assertThat(signer.buildRequestContent(params)).isEqualTo("a=1&b=2&sign_type=RSA2");
+        assertThat(signer.buildContent(params)).isEqualTo("a=1&b=2");
     }
 }
