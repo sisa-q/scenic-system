@@ -30,6 +30,8 @@
 </template>
 
 <script>
+    import { markRaw } from 'vue'
+
     export default {
         name: 'SpotDetailLoader',
         data() {
@@ -65,7 +67,7 @@
                     comp = defaultModule.default || defaultModule
                 }
 
-                this.currentComponent = comp
+                this.currentComponent = markRaw(comp)
                 this.loading = false
                 console.log('✅ [加载器] 最终渲染组件:', comp.name || '匿名组件')
             } catch (err) {
@@ -77,7 +79,7 @@
                 try {
                     console.log('🔄 [加载器] 尝试降级到通用模板...')
                     const defaultModule = await import('@/views/web/spot/DefaultDetail.vue')
-                    this.currentComponent = defaultModule.default || defaultModule
+                    this.currentComponent = markRaw(defaultModule.default || defaultModule)
                     this.error = null
                     console.log('✅ [加载器] 降级成功，使用通用模板')
                 } catch (fallbackErr) {
