@@ -35,14 +35,6 @@
                         @click="goPay"
                 >立即支付</van-button>
                 <van-button
-                        v-if="canConfirmPaid"
-                        type="primary"
-                        size="small"
-                        plain
-                        @click="confirmPaid"
-                        :loading="confirmingPaid"
-                >我已完成支付，确认订单</van-button>
-                <van-button
                         v-if="canEvaluate"
                         type="primary"
                         size="small"
@@ -115,7 +107,7 @@
 <script>
     import TabBar from '@/components/web/TabBar.vue'
     import { showToast, showConfirmDialog } from 'vant'
-    import { getOrderDetail, applyRefund, cancelRefund, refreshPayStatus } from '@/api/order'
+    import { getOrderDetail, applyRefund, cancelRefund } from '@/api/order'
     import { submitEvaluation, updateEvaluation, getOrderEvaluation } from '@/api/evaluation'
     import StarRating from '@/components/web/StarRating.vue'
     import { getTokenRole } from '@/utils/auth'
@@ -149,8 +141,7 @@
                 // 待支付倒计时（限时 30 分钟，与后端 pay.pay-timeout-minutes 一致）
                 remainSeconds: 30 * 60,
                 countdownTimer: null,
-                refreshTimer: null,
-                confirmingPaid: false
+                refreshTimer: null
             }
         },
         computed: {
@@ -193,10 +184,6 @@
             },
             canEvaluate() {
                 return this.order.status === 2 && !this.hasEvaluated && !this.showEvaluate
-            },
-            // 沙箱模式闭环：待支付订单可手动“确认支付结果”（不依赖异步通知/隧道）
-            canConfirmPaid() {
-                return this.order.status === 0 && this.remainSeconds > 0
             },
             canRefund() {
                 // 已支付订单可申请退款（一次性，申请后进入“退款申请中”）
@@ -396,26 +383,6 @@
                 }
             },
 
-            // 手动确认支付结果：后端查支付宝，已支付则确认订单
-            async confirmPaid() {
-                const orderId = this.$route.params.id || this.$route.query.id
-                if (!orderId) return
-                this.confirmingPaid = true
-                try {
-                    const res = await refreshPayStatus(orderId)
-                    const status = res.data && res.data.status
-                    await this.fetchOrderDetail(orderId, true)
-                    if (status === 1) {
-                        showToast('支付确认成功，订单已支付')
-                    } else {
-                        showToast('未查询到支付成功记录，请确认已在支付宝完成支付')
-                    }
-                } catch (e) {
-                    showToast(e.msg || e.message || '确认失败')
-                } finally {
-                    this.confirmingPaid = false
-                }
-            },
             async applyRefund() {
                 const orderId = this.$route.params.id || this.$route.query.id
                 try {
