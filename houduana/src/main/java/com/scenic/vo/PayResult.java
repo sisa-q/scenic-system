@@ -12,4 +12,5 @@ public class PayResult {
     private Long orderId;
     private String orderNo;
     private BigDecimal amount;
+    private Integer status;
 }

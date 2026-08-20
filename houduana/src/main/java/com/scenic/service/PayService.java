@@ -11,5 +11,7 @@ public interface PayService {
     /** 支付宝同步跳转（return_url）兜底确认：验签 + 主动查询交易状态 */
     PayResult handleReturn(Map<String, String> params);
     PayResult mockConfirm(Long orderId, Long operatorId, String role);
+    /** 前端刷新支付状态兜底：对待支付订单主动查询支付宝并确认（订单所有者/管理员） */
+    PayResult refreshOrderPaymentStatus(Long orderId, Long operatorId, String role);
     void refund(Order order);
 }
