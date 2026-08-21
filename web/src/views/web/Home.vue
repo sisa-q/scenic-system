@@ -7,7 +7,7 @@
         <!-- HUD -->
         <div class="hud-overlay">
             <!-- 顶部公告栏 -->
-            <div class="notice-bar" v-if="notices.length" @click="goNotice(currentNotice.id)">
+            <div class="notice-bar" v-if="notices.length" @click="openNoticePanel">
                 <span class="notice-bar-tag">📢 公告</span>
                 <transition name="notice-fade" mode="out-in">
                     <span :key="noticeIndex" class="notice-bar-text">{{ currentNotice.title }}</span>
@@ -68,7 +68,30 @@
             </div>
         </div>
 
-                <TabBar />
+                <!-- 公告中心面板 -->
+        <div class="notice-panel-mask" v-if="noticePanelOpen" @click.self="closeNoticePanel">
+            <div class="notice-panel">
+                <div class="panel-head">
+                    <span class="panel-head-title">📢 公告中心</span>
+                    <button class="panel-close" @click="closeNoticePanel">✕</button>
+                </div>
+                <div class="panel-body">
+                    <div class="notice-list-panel">
+                        <div v-for="(n, i) in notices" :key="n.id" class="notice-list-item" :class="{ active: n.id === activeNoticeId }" @click="loadNoticeDetail(n.id)">{{ n.title }}</div>
+                    </div>
+                    <div class="notice-detail-panel">
+                        <h3>{{ noticeDetail.title }}</h3>
+                        <div class="notice-detail-time">{{ noticeDetail.publishTime }}</div>
+                        <div class="notice-detail-content" v-html="noticeDetail.content"></div>
+                        <div class="panel-nav">
+                            <button @click="showPrevNotice">← 上一条</button>
+                            <button @click="showNextNotice">下一条 →</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <TabBar />
     </div>
 </template>
 
@@ -77,7 +100,7 @@
     import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
     import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
     import { getSpotList } from '@/api/ticket'
-    import { getNoticeList } from '@/api/notice'
+    import { getNoticeList, getNoticeDetail } from '@/api/notice'
     import { getWeatherBatch, getWeatherNow } from '@/api/weather'
     import TabBar from '@/components/web/TabBar.vue'
     import SearchPortal from '@/components/web/SearchPortal.vue'
@@ -94,6 +117,9 @@
                 hoveredCard: null,
                 notices: [],
                 noticeIndex: 0,
+                noticePanelOpen: false,
+                activeNoticeId: null,
+                noticeDetail: {},
                 noticeTimer: null,
                 weatherMap: {},
                 weatherPanel: null,
@@ -193,6 +219,34 @@
                         this.noticeIndex = (this.noticeIndex + 1) % this.notices.length
                     }
                 }, 4000)
+            },
+            openNoticePanel() {
+                this.noticePanelOpen = true
+                if (this.notices.length) this.loadNoticeDetail(this.currentNotice.id)
+            },
+            async loadNoticeDetail(id) {
+                this.activeNoticeId = id
+                try {
+                    const res = await getNoticeDetail(id)
+                    this.noticeDetail = res.data || {}
+                } catch (e) {
+                    this.noticeDetail = { title: '加载失败', content: '请稍后重试' }
+                }
+            },
+            showPrevNotice() {
+                if (!this.notices.length) return
+                const idx = this.notices.findIndex(n => n.id === this.activeNoticeId)
+                const prev = (idx - 1 + this.notices.length) % this.notices.length
+                this.loadNoticeDetail(this.notices[prev].id)
+            },
+            showNextNotice() {
+                if (!this.notices.length) return
+                const idx = this.notices.findIndex(n => n.id === this.activeNoticeId)
+                const next = (idx + 1) % this.notices.length
+                this.loadNoticeDetail(this.notices[next].id)
+            },
+            closeNoticePanel() {
+                this.noticePanelOpen = false
             },
             goNotice(id) {
                 if (!id) return
@@ -1082,29 +1136,32 @@
 
     /* ===== 顶部公告栏 ===== */
     .notice-bar {
-        position: absolute;
-        top: 66px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 20;
+        position: fixed;
+        top: 50px;
+        left: 0;
+        right: 0;
+        width: 100%;
+        z-index: 210;
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: 12px;
-        max-width: 62vw;
-        padding: 7px 18px;
-        border-radius: 30px;
+        height: 26px;
+        overflow: hidden;
+        opacity: 0.18;
+        transition: opacity 0.3s, height 0.3s;
+        padding: 0 20px;
         background: rgba(5, 15, 30, 0.55);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
-        border: 1px solid rgba(200, 162, 74, 0.35);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+        border-bottom: 1px solid rgba(200, 162, 74, 0.25);
         cursor: pointer;
         pointer-events: auto;
-        transition: border-color 0.3s, box-shadow 0.3s;
     }
     .notice-bar:hover {
-        border-color: rgba(200, 162, 74, 0.7);
-        box-shadow: 0 6px 26px rgba(0, 0, 0, 0.45);
+        opacity: 1;
+        height: 40px;
+        border-color: rgba(200, 162, 74, 0.6);
     }
     .notice-bar-tag {
         flex-shrink: 0;
@@ -1158,22 +1215,30 @@
         box-shadow: 0 0 14px rgba(255, 204, 68, 0.6);
     }
     /* ===== 天气提醒条 ===== */
+    .weather-alert-bar:hover {
+        opacity: 1;
+        height: 44px;
+    }
     .weather-alert-bar {
-        position: absolute;
-        top: 112px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 22;
+        position: fixed;
+        top: 76px;
+        left: 0;
+        right: 0;
+        width: 100%;
+        z-index: 209;
         display: flex;
         align-items: center;
         gap: 10px;
-        max-width: 60vw;
-        padding: 6px 16px;
-        border-radius: 24px;
+        height: 26px;
+        overflow: hidden;
+        opacity: 0.18;
+        transition: opacity 0.3s, height 0.3s;
+        padding: 0 20px;
         background: rgba(30, 15, 5, 0.6);
         backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 170, 60, 0.4);
-        pointer-events: none;
+        -webkit-backdrop-filter: blur(10px);
+        border-bottom: 1px solid rgba(255, 170, 60, 0.3);
+        pointer-events: auto;
     }
     .weather-alert-tag {
         flex-shrink: 0;
@@ -1379,6 +1444,36 @@
         .weather-ticker { bottom: 50px; width: 96vw; }
         .weather-ticker-title { display: none; }
     }
+
+    .notice-panel-mask {
+        position: fixed; inset: 0; z-index: 300;
+        background: rgba(0, 0, 0, 0.55);
+        display: flex; align-items: center; justify-content: center;
+    }
+    .notice-panel {
+        width: min(760px, 92vw); max-height: 76vh;
+        background: #0d1b2e;
+        border: 1px solid rgba(120, 170, 255, 0.3);
+        border-radius: 14px; color: #fff;
+        display: flex; flex-direction: column; overflow: hidden;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    }
+    .panel-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid rgba(120, 170, 255, 0.15); }
+    .panel-head-title { font-size: 16px; font-weight: 700; }
+    .panel-close { background: transparent; border: none; color: #fff; font-size: 18px; cursor: pointer; }
+    .panel-body { display: flex; min-height: 320px; }
+    .notice-list-panel { width: 220px; border-right: 1px solid rgba(120, 170, 255, 0.12); overflow-y: auto; padding: 10px; }
+    .notice-list-item { padding: 10px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; color: rgba(255,255,255,0.75); margin-bottom: 4px; }
+    .notice-list-item:hover { background: rgba(255,255,255,0.06); }
+    .notice-list-item.active { background: rgba(58,123,255,0.25); color: #fff; }
+    .notice-detail-panel { flex: 1; padding: 16px 20px; overflow-y: auto; }
+    .notice-detail-panel h3 { font-size: 16px; margin-bottom: 8px; }
+    .notice-detail-time { font-size: 12px; color: rgba(255,255,255,0.5); margin-bottom: 12px; }
+    .notice-detail-content { font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.85); }
+    .panel-nav { display: flex; gap: 10px; margin-top: 16px; }
+    .panel-nav button { flex: 1; padding: 8px; border-radius: 8px; border: none; background: rgba(58,123,255,0.2); color: #fff; cursor: pointer; }
+    .panel-nav button:hover { background: rgba(58,123,255,0.4); }
+    @media (max-width: 768px) { .panel-body { flex-direction: column; } .notice-list-panel { width: 100%; max-height: 140px; border-right: none; border-bottom: 1px solid rgba(120,170,255,0.12); } }
 </style>
 <style>
     /* ===== 动态元素全局样式（JS createElement 生成，scoped 样式不生效，必须全局） ===== */
