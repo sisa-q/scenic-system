@@ -17,6 +17,7 @@
                 </el-form-item>
                 <el-form-item>
                     <el-button type="primary" @click="handleSave">保存修改</el-button>
+                    <el-button style="margin-left:12px;" @click="handleLogout">退出登录</el-button>
                 </el-form-item>
             </el-form>
         </el-card>
@@ -26,7 +27,7 @@
 <script>
     import { useUserStore } from '@/store/modules/user'
     import { updateProfile } from '@/api/user'
-    import { ElMessage } from 'element-plus'
+    import { ElMessage, ElMessageBox } from 'element-plus'
 
     export default {
         name: 'Profile',
@@ -41,6 +42,15 @@
             this.form.phone = info.phone || ''
         },
         methods: {
+            handleLogout() {
+                ElMessageBox.confirm('确定退出登录吗？', '提示', { type: 'warning' })
+                    .then(() => {
+                        const store = useUserStore()
+                        store.logout()
+                        window.location.href = '/login'
+                    })
+                    .catch(() => {})
+            },
             async handleSave() {
                 try {
                     await updateProfile(this.form)

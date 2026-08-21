@@ -394,3 +394,25 @@ html, body {
 
 /* ---- 空状态/提示文案颜色 ---- */
 .el-table .el-table__empty-text { color: #6b7a94; }
+
+
+/* ===== 深色驾驶舱覆盖：管理页面深色背景协调 ===== */
+.admin-page { color: #dbe4f5; }
+.page-title { color: #e8eefc; }
+.page-subtitle { color: #8fa0c2; }
+.el-card { background: rgba(18, 30, 55, 0.72); border: 1px solid rgba(120, 170, 255, 0.14) !important; color: #dbe4f5; }
+.el-card__header { border-bottom: 1px solid rgba(120, 170, 255, 0.12); color: #e8eefc; }
+.el-table { background: rgba(14, 24, 46, 0.7); color: #dbe4f5; }
+.el-table th.el-table__cell { background: rgba(28, 44, 78, 0.9) !important; color: #e8eefc; }
+.el-table tr { background: rgba(14, 24, 46, 0.5); }
+.el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell { background: rgba(24, 38, 68, 0.6); }
+.el-table__body tr:hover > td.el-table__cell { background: rgba(58, 110, 197, 0.25) !important; }
+.el-form-item__label { color: #b8c6e0; }
+.el-input__wrapper, .el-textarea__inner { background: rgba(10, 18, 38, 0.6); box-shadow: 0 0 0 1px rgba(120,170,255,0.18) inset; }
+.el-input__inner, .el-textarea__inner { color: #dbe4f5; }
+.el-dialog { background: #0d1b2e; border: 1px solid rgba(120,170,255,0.2); }
+.el-dialog__title { color: #e8eefc; }
+.el-pagination { --el-pagination-bg-color: transparent; --el-pagination-text-color: #b8c6e0; }
+.el-tabs__item { color: #8fa0c2; }
+.el-tabs__item.is-active { color: #e8eefc; }
+.el-tabs__nav-wrap::after { background-color: rgba(120,170,255,0.15); }

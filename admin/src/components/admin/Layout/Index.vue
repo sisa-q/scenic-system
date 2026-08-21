@@ -49,7 +49,8 @@
     }
 
     .main {
-        background: linear-gradient(160deg, #f5f7fc 0%, #edf1f8 100%);
+        background: radial-gradient(1100px 500px at 15% 0%, rgba(50, 130, 255, 0.12), transparent 60%), linear-gradient(165deg, #0b1428 0%, #0d1b2a 100%);
+        color: #e8eefc;
         padding: 22px 26px;
         overflow-y: auto;
     }

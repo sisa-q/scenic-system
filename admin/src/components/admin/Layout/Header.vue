@@ -7,14 +7,12 @@
         <div class="user-info">
             <div class="avatar">{{ (userInfo.nickname || '管')[0] }}</div>
             <span class="uname">{{ userInfo.nickname || '管理员' }}</span>
-            <el-button class="logout-btn" size="small" plain @click="handleLogout">退出</el-button>
         </div>
     </div>
 </template>
 
 <script>
     import { useUserStore } from '@/store/modules/user'
-    import { ElMessageBox } from 'element-plus'
 
     export default {
         name: 'Header',
@@ -23,18 +21,6 @@
                 return useUserStore().userInfo
             }
         },
-        methods: {
-            handleLogout() {
-                ElMessageBox.confirm('确认退出登录？', '提示', { type: 'warning' })
-                    .then(() => {
-                        const store = useUserStore()
-                        store.logout()
-                        // ✨ 跳转到统一登录页
-                        window.location.href = '/login'
-                    })
-                    .catch(() => {})
-            }
-        }
     }
 </script>
 
