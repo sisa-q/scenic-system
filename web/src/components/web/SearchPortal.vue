@@ -1,6 +1,10 @@
 <template>
-    <div class="search-portal-overlay">
-        <div class="portal-search">
+    <div class="portal-nav">
+        <div class="nav-brand">
+            <div class="nav-title">✦ 全息导览系统</div>
+            <div class="nav-sub">HOLOGRAPHIC NAVIGATION</div>
+        </div>
+        <div class="nav-search">
             <input
                     type="text"
                     v-model="query"
@@ -9,22 +13,16 @@
             />
             <button @click="doSearch">搜索</button>
         </div>
-        <div class="portal-cats">
-            <div class="portal-cat" @click="$emit('go-spots')">
-                <span class="cat-icon">🎫</span>
-                <span>景点门票</span>
+        <div class="nav-right">
+            <div class="nav-stats">
+                <span>全球景点</span><b>{{ spotCount }}</b>
+                <span class="nav-selected">选中：{{ selected || '无' }}</span>
             </div>
-            <div class="portal-cat" @click="$emit('cat', 'hotel')">
-                <span class="cat-icon">🏨</span>
-                <span>酒店</span>
-            </div>
-            <div class="portal-cat" @click="$emit('cat', 'flight')">
-                <span class="cat-icon">✈️</span>
-                <span>机票</span>
-            </div>
-            <div class="portal-cat" @click="$emit('cat', 'ai')">
-                <span class="cat-icon">🤖</span>
-                <span>AI 助手</span>
+            <div class="nav-cats">
+                <span class="nav-cat" @click="$emit('go-spots')">景点门票</span>
+                <span class="nav-cat" @click="$emit('cat', 'hotel')">酒店</span>
+                <span class="nav-cat" @click="$emit('cat', 'flight')">机票</span>
+                <span class="nav-cat" @click="$emit('cat', 'ai')">AI 助手</span>
             </div>
         </div>
     </div>
@@ -34,7 +32,9 @@
     export default {
         name: 'SearchPortal',
         props: {
-            value: { type: String, default: '' }
+            value: { type: String, default: '' },
+            spotCount: { type: Number, default: 0 },
+            selected: { type: String, default: '' }
         },
         data() {
             return { query: this.value }
@@ -51,70 +51,120 @@
 </script>
 
 <style scoped>
-    .search-portal-overlay {
+    .portal-nav {
         position: fixed;
-        bottom: 40px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 100;
-        width: min(580px, 92vw);
-        background: rgba(8, 14, 28, 0.72);
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 200;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        padding: 10px 24px;
+        background: rgba(8, 14, 28, 0.78);
         backdrop-filter: blur(14px);
         -webkit-backdrop-filter: blur(14px);
-        border: 1px solid rgba(120, 170, 255, 0.25);
-        border-radius: 16px;
-        padding: 14px 16px;
+        border-bottom: 1px solid rgba(120, 170, 255, 0.2);
         color: #fff;
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     }
-    .portal-search {
+    .nav-brand {
+        display: flex;
+        flex-direction: column;
+        white-space: nowrap;
+    }
+    .nav-title {
+        font-size: 17px;
+        font-weight: 700;
+        letter-spacing: 1px;
+    }
+    .nav-sub {
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.5);
+        letter-spacing: 2px;
+    }
+    .nav-search {
+        flex: 1;
         display: flex;
         gap: 8px;
+        max-width: 520px;
     }
-    .portal-search input {
+    .nav-search input {
         flex: 1;
         background: rgba(255, 255, 255, 0.1);
         border: 1px solid rgba(120, 170, 255, 0.3);
         border-radius: 8px;
-        padding: 9px 12px;
+        padding: 8px 12px;
         color: #fff;
         outline: none;
         font-size: 14px;
     }
-    .portal-search input::placeholder {
+    .nav-search input::placeholder {
         color: rgba(255, 255, 255, 0.5);
     }
-    .portal-search button {
+    .nav-search button {
         background: #3a7bff;
         border: none;
         border-radius: 8px;
-        padding: 0 18px;
+        padding: 0 16px;
         color: #fff;
         cursor: pointer;
         font-size: 14px;
     }
-    .portal-cats {
+    .nav-right {
         display: flex;
-        gap: 8px;
-        margin-top: 12px;
-    }
-    .portal-cat {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
         align-items: center;
-        gap: 4px;
-        padding: 9px 0;
-        border-radius: 10px;
-        background: rgba(255, 255, 255, 0.06);
-        cursor: pointer;
-        transition: background 0.2s;
+        gap: 16px;
+    }
+    .nav-stats {
+        display: flex;
+        align-items: center;
+        gap: 6px;
         font-size: 12px;
+        color: rgba(255, 255, 255, 0.7);
+        white-space: nowrap;
     }
-    .portal-cat:hover {
-        background: rgba(58, 123, 255, 0.28);
+    .nav-stats b {
+        color: #6ea8ff;
+        font-size: 14px;
     }
-    .cat-icon {
-        font-size: 20px;
+    .nav-selected {
+        color: rgba(255, 255, 255, 0.5);
+        margin-left: 6px;
+    }
+    .nav-cats {
+        display: flex;
+        gap: 4px;
+    }
+    .nav-cat {
+        padding: 6px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 13px;
+        transition: background 0.2s, color 0.2s;
+        white-space: nowrap;
+    }
+    .nav-cat:hover {
+        background: rgba(58, 123, 255, 0.3);
+        color: #fff;
+    }
+    @media (max-width: 768px) {
+        .portal-nav {
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 8px 12px;
+        }
+        .nav-sub, .nav-selected {
+            display: none;
+        }
+        .nav-search {
+            order: 3;
+            max-width: none;
+            flex-basis: 100%;
+        }
+        .nav-cat {
+            padding: 4px 8px;
+            font-size: 12px;
+        }
     }
 </style>

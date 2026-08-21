@@ -2,6 +2,8 @@
     <div class="home-container">
         <div ref="sceneContainer" class="scene-container"></div>
 
+        <SearchPortal :value="searchQuery" :spot-count="hotspots.length" :selected="selectedName" @search="onPortalSearch" @cat="onPortalCat" @go-spots="onGoSpots" />
+
         <!-- HUD -->
         <div class="hud-overlay">
             <!-- 顶部公告栏 -->
@@ -13,30 +15,6 @@
                 <span class="notice-bar-more">查看详情 ›</span>
             </div>
 
-            <div class="hud-top-left">
-                <div class="hud-title">✦ 全息导览系统</div>
-                <div class="hud-subtitle">HOLOGRAPHIC NAVIGATION v3.0</div>
-                <div class="search-box">
-                    <input
-                            type="text"
-                            v-model="searchQuery"
-                            placeholder="搜索国家或景点..."
-                            @keyup.enter="performSearch"
-                    />
-                    <button @click="performSearch">🔍</button>
-                    <button v-if="searchQuery" @click="clearSearch" class="clear-btn">✕</button>
-                </div>
-            </div>
-            <div class="hud-top-right">
-                <div class="hud-stats">
-                    <span class="stat-label">全球景点</span>
-                    <span class="stat-value">{{ hotspots.length }}</span>
-                </div>
-                <div class="hud-stats" style="margin-top:4px;">
-                    <span class="stat-label">当前选中</span>
-                    <span class="stat-value highlight">{{ selectedName || '无' }}</span>
-                </div>
-            </div>
             <div class="hud-bottom">
                 <div class="hud-control-hint">
                     <span class="key">⟳ 左右拖动</span>
@@ -101,7 +79,6 @@
             </div>
         </div>
 
-        <SearchPortal :value="searchQuery" @search="onPortalSearch" @cat="onPortalCat" @go-spots="onGoSpots" />
         <TabBar />
     </div>
 </template>
