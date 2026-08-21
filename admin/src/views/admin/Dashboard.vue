@@ -14,7 +14,32 @@
 
         <!-- ===== 可隐藏的多景点导航栏 ===== -->
         <transition name="fade">
-            <div v-if="navVisible" class="spot-nav">
+            <!-- ==== 驾驶舱：指标卡 ==== -->
+        <div class="dash-metrics">
+            <div class="metric-card"><div class="metric-label">今日订单</div><div class="metric-value">{{ stats.todayOrders || 0 }}</div></div>
+            <div class="metric-card"><div class="metric-label">今日入园</div><div class="metric-value">{{ stats.todayEntered || 0 }}</div></div>
+            <div class="metric-card"><div class="metric-label">在园客流</div><div class="metric-value">{{ realtime.currentVisitors || stats.currentVisitors || 0 }}</div></div>
+            <div class="metric-card"><div class="metric-label">累计游客</div><div class="metric-value">{{ stats.totalVisitors || 0 }}</div></div>
+        </div>
+        <!-- ==== 驾驶舱：图表 ==== -->
+        <div class="dash-charts">
+            <div class="chart-card"><div class="chart-title">客流趋势（近 N 天）</div><div ref="trendChart" class="chart-box"></div></div>
+            <div class="chart-card"><div class="chart-title">客流时段分布</div><div ref="hourlyChart" class="chart-box"></div></div>
+            <div class="chart-card"><div class="chart-title">订单状态占比</div><div ref="statusChart" class="chart-box"></div></div>
+        </div>
+        <!-- ==== 驾驶舱：待办中心 ==== -->
+        <div class="dash-todo">
+            <div class="todo-title">待办中心</div>
+            <div v-if="refundList.length" class="todo-list">
+                <div v-for="r in refundList" :key="r.id" class="todo-item" @click="$router.push('/admin/order?status=5')">
+                    <span class="todo-tag">退款审核</span>
+                    <span class="todo-text">{{ r.orderNo }}</span>
+                    <span class="todo-go">去处理 →</span>
+                </div>
+            </div>
+            <div v-else class="todo-empty">暂无待办</div>
+        </div>
+        <div v-if="navVisible" class="spot-nav">
                 <div
                     v-for="s in spots"
                     :key="s.id"
@@ -51,6 +76,9 @@
 <script>
     import FlowScene from '@/components/web/FlowScene.vue'
     import { getSpotList } from '@/api/spot'
+    import * as echarts from 'echarts'
+    import { getFlowStats, getRealTime } from '@/api/flow'
+    import { getOrderList } from '@/api/order'
 
     export default {
         name: 'Dashboard',
@@ -59,7 +87,12 @@
             return {
                 spots: [],
                 currentSpot: null,
-                navVisible: true
+                navVisible: true,
+                stats: {},
+                realtime: {},
+                refundList: [],
+                statusCounts: [],
+                chartInstances: {}
             }
         },
         async mounted() {
@@ -72,8 +105,80 @@
                 this.spots = [{ id: 1, name: '中国-故宫', status: 1 }]
                 this.currentSpot = this.spots[0]
             }
+            this.loadDashboard()
         },
         methods: {
+        async loadDashboard() {
+            try { const s = await getFlowStats({}); this.stats = s.data || {} } catch (e) {}
+            try { const r = await getRealTime(); this.realtime = r.data || {} } catch (e) {}
+            try {
+                const r5 = await getOrderList({ status: 5, page: 1, size: 5 })
+                this.refundList = (r5.data && (r5.data.list || [])) || []
+            } catch (e) {}
+            this.loadStatusCounts()
+            this.$nextTick(() => this.initCharts())
+            window.addEventListener('resize', this.resizeCharts)
+        },
+        async loadStatusCounts() {
+            const st = [0, 1, 2, 3, 5]
+            const names = { 0: '待支付', 1: '已支付', 2: '已核销', 3: '已退款', 5: '退款中' }
+            const arr = []
+            for (const s of st) {
+                try { const r = await getOrderList({ status: s, page: 1, size: 1 }); arr.push({ name: names[s], value: (r.data && r.data.total) || 0 }) } catch (e) { arr.push({ name: names[s], value: 0 }) }
+            }
+            this.statusCounts = arr
+            this.$nextTick(() => this.renderStatus())
+        },
+        initCharts() {
+            this.renderTrend()
+            this.renderHourly()
+        },
+        renderTrend() {
+            if (!this.$refs.trendChart) return
+            const chart = echarts.init(this.$refs.trendChart)
+            chart.setOption({
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'axis' },
+                grid: { left: 42, right: 16, top: 30, bottom: 24 },
+                xAxis: { type: 'category', data: this.stats.dates || [], axisLine: { lineStyle: { color: '#5b6b8c' } } },
+                yAxis: { type: 'value', splitLine: { lineStyle: { color: 'rgba(120,170,255,0.12)' } } },
+                series: [{ type: 'line', smooth: true, data: this.stats.trend || [], areaStyle: { opacity: 0.25 }, lineStyle: { color: '#4da3ff' }, itemStyle: { color: '#4da3ff' } }]
+            })
+            this.chartInstances.trend = chart
+        },
+        renderHourly() {
+            if (!this.$refs.hourlyChart) return
+            const chart = echarts.init(this.$refs.hourlyChart)
+            const hd = this.stats.hourlyDistribution || []
+            chart.setOption({
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'axis' },
+                grid: { left: 42, right: 16, top: 30, bottom: 30 },
+                xAxis: { type: 'category', data: hd.map(i => i.name || ''), axisLabel: { rotate: 40, fontSize: 10 } },
+                yAxis: { type: 'value', splitLine: { lineStyle: { color: 'rgba(120,170,255,0.12)' } } },
+                series: [{ type: 'bar', data: hd.map(i => i.value || 0), itemStyle: { color: '#7c6bff' } }]
+            })
+            this.chartInstances.hourly = chart
+        },
+        renderStatus() {
+            if (!this.$refs.statusChart) return
+            const chart = echarts.init(this.$refs.statusChart)
+            chart.setOption({
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'item' },
+                legend: { bottom: 0, textStyle: { color: '#aebcd8' } },
+                series: [{ type: 'pie', radius: ['40%', '65%'], center: ['50%', '44%'], data: this.statusCounts, label: { color: '#cfe0ff' } }]
+            })
+            this.chartInstances.status = chart
+        },
+        resizeCharts() {
+            Object.keys(this.chartInstances).forEach(k => this.chartInstances[k] && this.chartInstances[k].resize())
+        },
+        beforeDestroy() {
+            Object.keys(this.chartInstances).forEach(k => this.chartInstances[k] && this.chartInstances[k].dispose())
+            window.removeEventListener('resize', this.resizeCharts)
+        },
+
             // 只有“故宫”开放三维场景，其余景点敬请期待
             isOpen(s) {
                 return !!s && !!s.name && String(s.name).indexOf('故宫') >= 0
@@ -173,4 +278,24 @@
 
     .fade-enter-active, .fade-leave-active { transition: opacity .2s, transform .2s; }
     .fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(-6px); }
+
+    /* ==== 驾驶舱样式 ==== */
+    .dash-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 12px; }
+    .metric-card { background: rgba(16, 28, 56, 0.6); border: 1px solid rgba(120,170,255,0.14); border-radius: 12px; padding: 14px 16px; backdrop-filter: blur(8px); }
+    .metric-label { font-size: 12px; color: #7d8db0; }
+    .metric-value { font-size: 26px; font-weight: 800; color: #6ea8ff; margin-top: 6px; }
+    .dash-charts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 12px; }
+    .chart-card { background: rgba(16, 28, 56, 0.6); border: 1px solid rgba(120,170,255,0.14); border-radius: 12px; padding: 12px; }
+    .chart-title { font-size: 13px; color: #aebcd8; margin-bottom: 8px; }
+    .chart-box { width: 100%; height: 240px; }
+    .dash-todo { background: rgba(16, 28, 56, 0.6); border: 1px solid rgba(120,170,255,0.14); border-radius: 12px; padding: 12px 16px; margin-bottom: 12px; }
+    .todo-title { font-size: 14px; color: #e8eefc; font-weight: 700; margin-bottom: 8px; }
+    .todo-list { display: flex; flex-direction: column; gap: 6px; }
+    .todo-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.04); cursor: pointer; transition: background .15s; }
+    .todo-item:hover { background: rgba(77,163,255,0.14); }
+    .todo-tag { font-size: 11px; color: #ffd27a; background: rgba(255,210,122,0.12); padding: 2px 8px; border-radius: 999px; }
+    .todo-text { flex: 1; font-size: 13px; color: #cfe0ff; font-family: monospace; }
+    .todo-go { font-size: 12px; color: #4da3ff; }
+    .todo-empty { color: #7d8db0; font-size: 13px; padding: 10px 0; }
+    @media (max-width: 1100px) { .dash-charts { grid-template-columns: 1fr; } .dash-metrics { grid-template-columns: repeat(2, 1fr); } }
 </style>
