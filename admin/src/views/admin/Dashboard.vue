@@ -21,17 +21,7 @@
                 </div>
             </div>
         </transition>
-        <div class="dash-todo">
-            <div class="todo-title">待办中心</div>
-            <div v-if="refundList.length" class="todo-list">
-                <div v-for="r in refundList" :key="r.id" class="todo-item" @click="$router.push('/admin/order?status=5')">
-                    <span class="todo-tag">退款审核</span>
-                    <span class="todo-text">{{ r.orderNo }}</span>
-                    <span class="todo-go">去处理 →</span>
-                </div>
-            </div>
-            <div v-else class="todo-empty">暂无待办</div>
-        </div>
+        
         <div class="dashboard-3d">
             <div class="dash-metrics">
                 <div class="metric-card"><div class="metric-label">今日订单</div><div class="metric-value">{{ stats.todayOrders || 0 }}</div></div>
@@ -44,6 +34,17 @@
                 <div class="chart-card"><div class="chart-title">客流时段分布</div><div ref="hourlyChart" class="chart-box"></div></div>
                 <div class="chart-card"><div class="chart-title">订单状态占比</div><div ref="statusChart" class="chart-box"></div></div>
             </div>
+            <div class="dash-todo">
+            <div class="todo-title">待办中心</div>
+            <div v-if="refundList.length" class="todo-list">
+                <div v-for="r in refundList" :key="r.id" class="todo-item" @click="$router.push('/admin/order?status=5')">
+                    <span class="todo-tag">退款审核</span>
+                    <span class="todo-text">{{ r.orderNo }}</span>
+                    <span class="todo-go">去处理 →</span>
+                </div>
+            </div>
+            <div v-else class="todo-empty">暂无待办</div>
+        </div>
             <div class="dash-scene">
                 <FlowScene v-if="currentSpot && isOpen(currentSpot)" style="width:100%;height:100%;min-height:560px;" />
                 <div v-else class="coming-soon">
