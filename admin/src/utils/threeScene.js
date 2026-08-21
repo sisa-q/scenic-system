@@ -535,7 +535,7 @@ export function initScene(containerElement) {
     renderer.setSize(width, height)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
     renderer.shadowMap.enabled = true
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap
+    renderer.shadowMap.type = THREE.PCFShadowMap
     renderer.toneMapping = THREE.ACESFilmicToneMapping
     renderer.toneMappingExposure = 1.0
     renderer.outputColorSpace = THREE.SRGBColorSpace
@@ -1480,12 +1480,16 @@ class DeltaSync {
         this.simTimer = null
         this.pingTimer = null
         this._pingStart = 0
+        this._reconnectTimer = null
+        this._pageshowHandler = (e) => { if (e.persisted && !this.connected) this.reconnect() }
+        window.addEventListener('pageshow', this._pageshowHandler)
     }
     connect() {
         try {
             this.ws = new WebSocket(this.url)
             this.ws.onopen = () => {
                 this.connected = true
+                this._stopSim()
                 this._startPing()
             }
             this.ws.onmessage = (e) => {
@@ -1497,7 +1501,7 @@ class DeltaSync {
                 try { this.onDelta(JSON.parse(e.data)) } catch (err) { /* 忽略非法帧 */ }
             }
             this.ws.onerror = () => { this.connected = false; this._startSim() }
-            this.ws.onclose = () => { this.connected = false; this._startSim() }
+            this.ws.onclose = () => { this.connected = false; this._startSim(); this._scheduleReconnect() }
             setTimeout(() => { if (!this.connected) this._startSim() }, 1500)
         } catch (err) {
             this._startSim()
@@ -1524,6 +1528,8 @@ class DeltaSync {
     getLoadKB() { return this.bytes / 1024 }
     getLatencyMs() { return this.latency }
     dispose() {
+        if (this._reconnectTimer) { clearTimeout(this._reconnectTimer); this._reconnectTimer = null }
+        window.removeEventListener('pageshow', this._pageshowHandler)
         if (this.simTimer) clearInterval(this.simTimer)
         if (this.pingTimer) clearInterval(this.pingTimer)
         if (this.ws) { try { this.ws.close() } catch (err) { /* ignore */ } }
