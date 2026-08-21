@@ -15,19 +15,20 @@
                 <span class="notice-bar-more">查看详情 ›</span>
             </div>
 
-            <div class="hud-bottom">
-                <div class="hud-control-hint">
-                    <span class="key">⟳ 左右拖动</span>
-                    <span class="key">⇱ 上下俯仰</span>
-                    <span class="key">◉ 点击国家热点跳转</span>
-                </div>
-            </div>
+            
         </div>
 
         <!-- 天气提醒条（WebSocket 推送） -->
-        <div class="weather-alert-bar" v-if="weatherAlerts.length">
-            <span class="weather-alert-tag">🌦 天气提醒</span>
-            <span class="weather-alert-text">{{ weatherAlerts[weatherAlertIndex % weatherAlerts.length] }}</span>
+        <div class="weather-alert-bar" v-if="weatherAlerts.length || weatherTicker.length">
+            <span class="weather-alert-tag">🌦 天气</span>
+            <span class="weather-alert-text" v-if="weatherAlerts.length">{{ weatherAlerts[weatherAlertIndex % weatherAlerts.length] }}</span>
+            <div class="weather-ticker-scroll">
+                <div v-for="w in weatherTicker" :key="w.spotId" class="weather-ticker-item" @click="openWeatherFromTicker(w.spotId)">
+                    <span class="ticker-icon">{{ w.icon }}</span>
+                    <span class="ticker-name">{{ w.name }}</span>
+                    <span class="ticker-temp">{{ Math.round(Number(w.temp)) }}°C</span>
+                </div>
+            </div>
         </div>
 
         <!-- 天气面板 -->
@@ -67,19 +68,7 @@
             </div>
         </div>
 
-        <!-- 全球天气一览 -->
-        <div class="weather-ticker" v-if="weatherTicker.length">
-            <div class="weather-ticker-title">🌍 全球天气</div>
-            <div class="weather-ticker-scroll">
-                <div v-for="w in weatherTicker" :key="w.spotId" class="weather-ticker-item" @click="openWeatherFromTicker(w.spotId)">
-                    <span class="ticker-icon">{{ w.icon }}</span>
-                    <span class="ticker-name">{{ w.name }}</span>
-                    <span class="ticker-temp">{{ Math.round(Number(w.temp)) }}°C</span>
-                </div>
-            </div>
-        </div>
-
-        <TabBar />
+                <TabBar />
     </div>
 </template>
 
@@ -1094,7 +1083,7 @@
     /* ===== 顶部公告栏 ===== */
     .notice-bar {
         position: absolute;
-        top: 14px;
+        top: 66px;
         left: 50%;
         transform: translateX(-50%);
         z-index: 20;
@@ -1171,7 +1160,7 @@
     /* ===== 天气提醒条 ===== */
     .weather-alert-bar {
         position: absolute;
-        top: 60px;
+        top: 112px;
         left: 50%;
         transform: translateX(-50%);
         z-index: 22;
