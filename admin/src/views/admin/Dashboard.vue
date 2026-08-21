@@ -331,4 +331,6 @@
     .todo-empty { color: #7d8db0; font-size: 13px; padding: 10px 0; }
     @media (max-width: 1100px) { .dash-charts { grid-template-columns: 1fr; } .dash-metrics { grid-template-columns: repeat(2, 1fr); } }
     .dashboard-3d:fullscreen { width: 100vw; height: 100vh; border-radius: 0; }
+    .dashboard-3d:fullscreen .dash-side { width: 430px; }
+    .dashboard-3d:fullscreen .chart-box { height: 150px; }
 </style>
