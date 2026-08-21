@@ -337,7 +337,7 @@
     }
     .dash-metrics { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
     .dash-charts { grid-column: 1; grid-row: 2; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
-    .dash-scene { grid-column: 2; grid-row: 2; position: relative; border-radius: 10px; overflow: hidden; background: #0a0a2a; }
+    .dash-scene { grid-column: 2; grid-row: 2; position: relative; border-radius: 10px; overflow: hidden; background: #0a0a2a; padding-top: 14px; }
     .dash-todo { grid-column: 3; grid-row: 2; max-height: 340px; overflow-y: auto; background: rgba(16, 28, 56, 0.5); border: 1px solid rgba(120,170,255,0.14); border-radius: 10px; padding: 8px 10px; }
     .chart-card { flex: 1; display: flex; flex-direction: column; min-height: 0; }
     .chart-box { flex: 1; width: 100%; min-height: 80px; }
