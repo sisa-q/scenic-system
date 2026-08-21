@@ -6,29 +6,14 @@
                 <div class="page-subtitle">多景点切换 · 实时客流仿真 · 摄影艺术 × 科幻智能</div>
             </div>
             <div class="page-header-right">
-                <el-button size="small" plain style="margin-right:8px;" @click="toggleFullscreen">{{ isFullscreen ? '退出全屏' : '全屏大屏' }}</el-button>
                 <el-button :type="navVisible ? 'default' : 'primary'" size="small" plain @click="navVisible = !navVisible">
                     {{ navVisible ? '收起景点导航' : '展开景点导航' }}
                 </el-button>
             </div>
         </div>
-
-        <!-- ===== 可隐藏的多景点导航栏 ===== -->
-                    <!-- ==== 驾驶舱：指标卡 ==== -->
-        
-        <!-- ==== 驾驶舱：图表 ==== -->
-        
-        <!-- ==== 驾驶舱：待办中心 ==== -->
-        
         <transition name="fade">
-        <div v-if="navVisible" class="spot-nav">
-                <div
-                    v-for="s in spots"
-                    :key="s.id"
-                    class="spot-nav-item"
-                    :class="{ active: currentSpot && currentSpot.id === s.id, open: isOpen(s) }"
-                    @click="selectSpot(s)"
-                >
+            <div v-if="navVisible" class="spot-nav">
+                <div v-for="s in spots" :key="s.id" class="spot-nav-item" :class="{ active: currentSpot && currentSpot.id === s.id, open: isOpen(s) }" @click="selectSpot(s)">
                     <span class="dot"></span>
                     <span class="name">{{ s.name }}</span>
                     <span v-if="isOpen(s)" class="badge open">已开放</span>
@@ -36,37 +21,7 @@
                 </div>
             </div>
         </transition>
-
-        <!-- ===== 大屏主体 ===== -->
-                <div ref="dash3d" class="dashboard-3d">
-            <div class="dash-metrics">
-            <div class="metric-card"><div class="metric-label">今日订单</div><div class="metric-value">{{ stats.todayOrders || 0 }}</div></div>
-            <div class="metric-card"><div class="metric-label">今日入园</div><div class="metric-value">{{ stats.todayEntered || 0 }}</div></div>
-            <div class="metric-card"><div class="metric-label">在园客流</div><div class="metric-value">{{ realtime.currentVisitors || stats.currentVisitors || 0 }}</div></div>
-            <div class="metric-card"><div class="metric-label">累计游客</div><div class="metric-value">{{ stats.totalVisitors || 0 }}</div></div>
-        </div>
-            <div class="dash-main">
-                <div class="dash-scene">
-                    <!-- 故宫：渲染三维客流大屏 -->
-            <FlowScene
-                    v-if="currentSpot && isOpen(currentSpot)"
-                    style="width:100%;height:100%;min-height:560px;"
-            />
-            <!-- 其它景点：敬请期待 -->
-            <div v-else class="coming-soon">
-                <div class="soon-glow"></div>
-                <div class="soon-icon">✦</div>
-                <div class="soon-title">{{ currentSpot ? currentSpot.name : '景点' }}</div>
-                <div class="soon-text">三维场景建设中 · 敬请期待</div>
-            </div>
-                </div>
-                <div class="dash-side">
-                    <div class="dash-charts">
-            <div class="chart-card"><div class="chart-title">客流趋势（近 N 天）</div><div ref="trendChart" class="chart-box"></div></div>
-            <div class="chart-card"><div class="chart-title">客流时段分布</div><div ref="hourlyChart" class="chart-box"></div></div>
-            <div class="chart-card"><div class="chart-title">订单状态占比</div><div ref="statusChart" class="chart-box"></div></div>
-        </div>
-                    <div class="dash-todo">
+        <div class="dash-todo">
             <div class="todo-title">待办中心</div>
             <div v-if="refundList.length" class="todo-list">
                 <div v-for="r in refundList" :key="r.id" class="todo-item" @click="$router.push('/admin/order?status=5')">
@@ -77,6 +32,25 @@
             </div>
             <div v-else class="todo-empty">暂无待办</div>
         </div>
+        <div class="dashboard-3d">
+            <div class="dash-metrics">
+                <div class="metric-card"><div class="metric-label">今日订单</div><div class="metric-value">{{ stats.todayOrders || 0 }}</div></div>
+                <div class="metric-card"><div class="metric-label">今日入园</div><div class="metric-value">{{ stats.todayEntered || 0 }}</div></div>
+                <div class="metric-card"><div class="metric-label">在园客流</div><div class="metric-value">{{ realtime.currentVisitors || stats.currentVisitors || 0 }}</div></div>
+                <div class="metric-card"><div class="metric-label">累计游客</div><div class="metric-value">{{ stats.totalVisitors || 0 }}</div></div>
+            </div>
+            <div class="dash-charts">
+                <div class="chart-card"><div class="chart-title">客流趋势（近 N 天）</div><div ref="trendChart" class="chart-box"></div></div>
+                <div class="chart-card"><div class="chart-title">客流时段分布</div><div ref="hourlyChart" class="chart-box"></div></div>
+                <div class="chart-card"><div class="chart-title">订单状态占比</div><div ref="statusChart" class="chart-box"></div></div>
+            </div>
+            <div class="dash-scene">
+                <FlowScene v-if="currentSpot && isOpen(currentSpot)" style="width:100%;height:100%;min-height:560px;" />
+                <div v-else class="coming-soon">
+                    <div class="soon-glow"></div>
+                    <div class="soon-icon">?</div>
+                    <div class="soon-title">{{ currentSpot ? currentSpot.name : '景点' }}</div>
+                    <div class="soon-text">三维可视化建设中 · 敬请期待</div>
                 </div>
             </div>
         </div>
@@ -272,6 +246,7 @@
     .badge.soon { color: #8fa0c2; background: rgba(143,160,194,0.12); }
 
     /* 大屏容器 */
+    .dash-scene { flex: 1; min-height: 300px; border-radius: 10px; overflow: hidden; position: relative; background: #0a0a2a; }
     .dashboard-3d {
         position: relative;
         width: 100%;
@@ -316,11 +291,11 @@
     .metric-card { background: rgba(16, 28, 56, 0.6); border: 1px solid rgba(120,170,255,0.14); border-radius: 12px; padding: 14px 16px; backdrop-filter: blur(8px); }
     .metric-label { font-size: 12px; color: #7d8db0; }
     .metric-value { font-size: 26px; font-weight: 800; color: #6ea8ff; margin-top: 6px; }
-    .dash-charts { display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; }
+    .dash-charts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; flex-shrink: 0; }
     .chart-card { background: rgba(16, 28, 56, 0.6); border: 1px solid rgba(120,170,255,0.14); border-radius: 12px; padding: 12px; }
     .chart-title { font-size: 13px; color: #aebcd8; margin-bottom: 8px; }
-    .chart-box { width: 100%; height: 128px; }
-    .dash-todo { background: rgba(16, 28, 56, 0.6); border: 1px solid rgba(120,170,255,0.14); border-radius: 12px; padding: 12px 16px; margin-bottom: 12px; }
+    .chart-box { width: 100%; height: 150px; }
+    .dash-todo { background: rgba(16, 28, 56, 0.6); border: 1px solid rgba(120,170,255,0.14); border-radius: 12px; padding: 8px 14px; margin-bottom: 12px; flex-shrink: 0; }
     .todo-title { font-size: 14px; color: #e8eefc; font-weight: 700; margin-bottom: 8px; }
     .todo-list { display: flex; flex-direction: column; gap: 6px; }
     .todo-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.04); cursor: pointer; transition: background .15s; }
