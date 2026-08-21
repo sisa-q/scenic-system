@@ -8,7 +8,7 @@
                 <Header />
             </el-header>
             <el-main class="main">
-                <router-view />
+                <div class="page-content"><router-view /></div>
             </el-main>
         </el-container>
     </el-container>
@@ -42,6 +42,12 @@
         padding: 0 24px;
         backdrop-filter: blur(8px);
     }
+.page-content {
+        width: 100%;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
     .main {
         background: linear-gradient(160deg, #f5f7fc 0%, #edf1f8 100%);
         padding: 22px 26px;

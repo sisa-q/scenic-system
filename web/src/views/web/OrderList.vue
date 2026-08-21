@@ -1,5 +1,5 @@
 <template>
-    <div class="order-list">
+    <div class="order-list page-container">
         <!-- ========== 顶部标签栏 ========== -->
         <div class="order-header">
             <van-tabs v-model:active="activeStatus" @change="onTabChange">

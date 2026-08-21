@@ -148,3 +148,16 @@ body {
 .van-tabbar-item { color: #7d8db0 !important; }
 .van-tabbar-item--active { color: #4da3ff !important; }
 .van-tabbar-item--active .van-icon { color: #4da3ff !important; }
+
+
+/* ===== desktop container ===== */
+.page-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+@media (min-width: 1200px) {
+  .page-container {
+    padding: 20px;
+  }
+}

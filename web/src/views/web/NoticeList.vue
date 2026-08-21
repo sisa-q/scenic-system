@@ -1,5 +1,5 @@
 <template>
-    <div class="notice-list">
+    <div class="notice-list page-container">
         <van-cell
                 v-for="item in list"
                 :key="item.id"

@@ -1,5 +1,5 @@
 <template>
-    <div class="notice-detail" v-if="notice.id">
+    <div class="notice-detail page-container" v-if="notice.id">
         <h2>{{ notice.title }}</h2>
         <div class="time">{{ notice.publishTime }}</div>
         <div class="content" v-html="notice.content"></div>

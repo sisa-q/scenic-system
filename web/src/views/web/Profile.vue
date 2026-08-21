@@ -1,5 +1,5 @@
 <template>
-    <div class="profile">
+    <div class="profile page-container">
         <van-form @submit="onSubmit">
             <van-cell-group inset>
                 <van-field

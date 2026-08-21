@@ -1,5 +1,5 @@
 <template>
-    <div class="default-detail">
+    <div class="default-detail page-container">
         <div class="spot-header">
             <h2>{{ spot.name }}</h2>
             <p class="location">{{ spot.location }}</p>

@@ -1,5 +1,5 @@
 <template>
-    <div class="order-detail-page">
+    <div class="order-detail-page page-container">
         <!-- 订单信息卡片 -->
         <div class="order-card">
             <div class="order-header">

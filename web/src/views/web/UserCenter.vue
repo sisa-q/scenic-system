@@ -1,5 +1,5 @@
 <template>
-    <div class="user-center">
+    <div class="user-center page-container">
         <van-cell-group inset>
             <van-cell title="头像" is-link @click="goProfile">
                 <template #icon>

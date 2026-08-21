@@ -1,5 +1,5 @@
 <template>
-    <div class="evaluation-submit">
+    <div class="evaluation-submit page-container">
         <van-cell-group inset>
             <van-cell title="评分">
                 <template #right-icon>

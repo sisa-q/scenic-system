@@ -1,5 +1,5 @@
 <template>
-    <div class="order-confirm" v-if="slotInfo">
+    <div class="order-confirm page-container" v-if="slotInfo">
         <van-cell-group inset>
             <van-cell title="景点" :value="spotName" />
             <van-cell title="票种" :value="policyName" />
