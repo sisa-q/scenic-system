@@ -47,7 +47,7 @@
         font-size: 18px;
         font-weight: 700;
         letter-spacing: 2px;
-        color: #16283f;
+        color: #e8eefc;
         font-family: 'STKaiti', 'KaiTi', 'SimSun', serif;
     }
     .user-info {
@@ -69,7 +69,7 @@
         box-shadow: 0 3px 10px rgba(36, 86, 168, 0.3);
     }
     .uname {
-        color: #4a5b78;
+        color: #b8c6e0;
         font-weight: 500;
     }
     .logout-btn {

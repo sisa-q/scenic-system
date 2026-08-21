@@ -6,6 +6,7 @@
                 <div class="page-subtitle">多景点切换 · 实时客流仿真 · 摄影艺术 × 科幻智能</div>
             </div>
             <div class="page-header-right">
+                <el-button size="small" plain style="margin-right:8px;" @click="toggleFullscreen">{{ isFullscreen ? '退出全屏' : '全屏大屏' }}</el-button>
                 <el-button :type="navVisible ? 'default' : 'primary'" size="small" plain @click="navVisible = !navVisible">
                     {{ navVisible ? '收起景点导航' : '展开景点导航' }}
                 </el-button>
@@ -37,7 +38,7 @@
         </transition>
 
         <!-- ===== 大屏主体 ===== -->
-                <div class="dashboard-3d">
+                <div ref="dash3d" class="dashboard-3d">
             <div class="dash-metrics">
             <div class="metric-card"><div class="metric-label">今日订单</div><div class="metric-value">{{ stats.todayOrders || 0 }}</div></div>
             <div class="metric-card"><div class="metric-label">今日入园</div><div class="metric-value">{{ stats.todayEntered || 0 }}</div></div>
@@ -101,7 +102,8 @@
                 realtime: {},
                 refundList: [],
                 statusCounts: [],
-                chartInstances: {}
+                chartInstances: {},
+                isFullscreen: false
             }
         },
         async mounted() {
@@ -127,6 +129,7 @@
             this.loadStatusCounts()
             this.$nextTick(() => this.initCharts())
             window.addEventListener('resize', this.resizeCharts)
+            document.addEventListener('fullscreenchange', this.fullscreenChange)
         },
         async loadStatusCounts() {
             const st = [0, 1, 2, 3, 5]
@@ -180,12 +183,25 @@
             })
             this.chartInstances.status = chart
         },
+        toggleFullscreen() {
+            const el = this.$refs.dash3d
+            if (!document.fullscreenElement) {
+                if (el && el.requestFullscreen) { el.requestFullscreen().catch(() => {}) }
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen()
+            }
+        },
+        fullscreenChange() {
+            this.isFullscreen = !!document.fullscreenElement
+            this.$nextTick(() => this.resizeCharts())
+        },
         resizeCharts() {
             Object.keys(this.chartInstances).forEach(k => this.chartInstances[k] && this.chartInstances[k].resize())
         },
         beforeDestroy() {
             Object.keys(this.chartInstances).forEach(k => this.chartInstances[k] && this.chartInstances[k].dispose())
             window.removeEventListener('resize', this.resizeCharts)
+            document.removeEventListener('fullscreenchange', this.fullscreenChange)
         },
 
             // 只有“故宫”开放三维场景，其余景点敬请期待
@@ -257,8 +273,8 @@
     .dashboard-3d {
         position: relative;
         width: 100%;
-        height: calc(100vh - 300px);
-        min-height: 640px;
+        height: calc(100vh - 230px);
+        min-height: 560px;
         display: flex;
         flex-direction: column;
         gap: 10px;
@@ -311,4 +327,5 @@
     .todo-go { font-size: 12px; color: #4da3ff; }
     .todo-empty { color: #7d8db0; font-size: 13px; padding: 10px 0; }
     @media (max-width: 1100px) { .dash-charts { grid-template-columns: 1fr; } .dash-metrics { grid-template-columns: repeat(2, 1fr); } }
+    .dashboard-3d:fullscreen { width: 100vw; height: 100vh; border-radius: 0; }
 </style>

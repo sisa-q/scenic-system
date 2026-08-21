@@ -35,7 +35,7 @@
         box-shadow: 2px 0 18px rgba(13, 27, 42, 0.16);
     }
     .header {
-        background: rgba(255, 255, 255, 0.92);
+        background: rgba(13, 27, 42, 0.85);
         border-bottom: 1px solid rgba(30, 60, 110, 0.08);
         display: flex;
         align-items: center;
