@@ -22,12 +22,14 @@
             </div>
         </transition>
         <div class="dashboard-3d">
-            <FlowScene v-if="currentSpot && isOpen(currentSpot)" style="width:100%;height:100%;" />
-            <div v-else class="coming-soon">
-                <div class="soon-glow"></div>
-                <div class="soon-icon">?</div>
-                <div class="soon-title">{{ currentSpot ? currentSpot.name : '景点' }}</div>
-                <div class="soon-text">三维可视化建设中 · 敬请期待</div>
+            <div class="dash-scene">
+                <FlowScene v-if="currentSpot && isOpen(currentSpot)" style="width:100%;height:100%;" />
+                <div v-else class="coming-soon">
+                    <div class="soon-glow"></div>
+                    <div class="soon-icon">?</div>
+                    <div class="soon-title">{{ currentSpot ? currentSpot.name : '景点' }}</div>
+                    <div class="soon-text">三维可视化建设中 · 敬请期待</div>
+                </div>
             </div>
             <div class="dash-metrics">
                 <div class="metric-card"><div class="metric-label">今日订单</div><div class="metric-value">{{ stats.todayOrders || 0 }}</div></div>
@@ -316,4 +318,29 @@
     .metric-card { padding: 8px 12px; }
     .metric-value { font-size: 20px; }
     .chart-card { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+
+    /* ==== 大屏 Grid 分区：不重叠、同一平面 ==== */
+    .dashboard-3d {
+        position: relative;
+        width: 100%;
+        flex: 1;
+        min-height: 460px;
+        display: grid;
+        grid-template-columns: 280px 1fr 240px;
+        grid-template-rows: auto 1fr;
+        gap: 10px;
+        padding: 10px;
+        border-radius: 14px;
+        border: 1px solid rgba(120, 170, 255, 0.16);
+        background: #0a0a2a;
+        overflow: hidden;
+    }
+    .dash-metrics { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .dash-charts { grid-column: 1; grid-row: 2; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+    .dash-scene { grid-column: 2; grid-row: 2; position: relative; border-radius: 10px; overflow: hidden; background: #0a0a2a; }
+    .dash-todo { grid-column: 3; grid-row: 2; overflow-y: auto; background: rgba(16, 28, 56, 0.5); border: 1px solid rgba(120,170,255,0.14); border-radius: 10px; padding: 8px 10px; }
+    .chart-card { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+    .chart-box { flex: 1; width: 100%; min-height: 80px; }
+    .metric-card { padding: 8px 12px; background: rgba(16, 28, 56, 0.6); border: 1px solid rgba(120,170,255,0.14); border-radius: 10px; }
+    .metric-value { font-size: 20px; }
 </style>
