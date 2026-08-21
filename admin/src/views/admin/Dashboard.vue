@@ -13,8 +13,7 @@
         </div>
 
         <!-- ===== 可隐藏的多景点导航栏 ===== -->
-        <transition name="fade">
-            <!-- ==== 驾驶舱：指标卡 ==== -->
+                    <!-- ==== 驾驶舱：指标卡 ==== -->
         <div class="dash-metrics">
             <div class="metric-card"><div class="metric-label">今日订单</div><div class="metric-value">{{ stats.todayOrders || 0 }}</div></div>
             <div class="metric-card"><div class="metric-label">今日入园</div><div class="metric-value">{{ stats.todayEntered || 0 }}</div></div>
@@ -39,6 +38,7 @@
             </div>
             <div v-else class="todo-empty">暂无待办</div>
         </div>
+        <transition name="fade">
         <div v-if="navVisible" class="spot-nav">
                 <div
                     v-for="s in spots"

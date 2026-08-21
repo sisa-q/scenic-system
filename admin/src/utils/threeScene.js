@@ -1516,6 +1516,17 @@ class DeltaSync {
             }
         }, 2000)
     }
+    _stopSim() {
+        if (this.simTimer) { clearInterval(this.simTimer); this.simTimer = null }
+    }
+    _scheduleReconnect() {
+        if (this._reconnectTimer) return
+        this._reconnectTimer = setTimeout(() => { this._reconnectTimer = null; this.reconnect() }, 3000)
+    }
+    reconnect() {
+        this._stopSim()
+        this.connect()
+    }
     _startSim() {
         if (this.simTimer) return
         this.simTimer = setInterval(() => {
