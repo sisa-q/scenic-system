@@ -222,7 +222,9 @@
             radial-gradient(1100px 500px at 15% 0%, rgba(50, 130, 255, 0.16), transparent 60%),
             radial-gradient(900px 460px at 100% 0%, rgba(140, 90, 255, 0.14), transparent 55%),
             linear-gradient(165deg, #070b18 0%, #0b1428 60%, #080f20 100%);
-        min-height: 100vh;
+        min-height: calc(100vh - 20px);
+        display: flex;
+        flex-direction: column;
     }
     .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
     .page-title { font-size: 20px; font-weight: 700; letter-spacing: 2px; color: #e8eefc; }
@@ -273,8 +275,9 @@
     .dashboard-3d {
         position: relative;
         width: 100%;
-        height: calc(100vh - 230px);
-        min-height: 560px;
+        height: auto;
+        flex: 1;
+        min-height: 460px;
         display: flex;
         flex-direction: column;
         gap: 10px;

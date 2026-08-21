@@ -4,9 +4,6 @@
             <Sidebar />
         </el-aside>
         <el-container>
-            <el-header height="64px" class="header">
-                <Header />
-            </el-header>
             <el-main class="main">
                 <div class="page-content"><router-view /></div>
             </el-main>
@@ -16,11 +13,10 @@
 
 <script>
     import Sidebar from './Sidebar.vue'
-    import Header from './Header.vue'
 
     export default {
         name: 'AdminLayout',
-        components: { Sidebar, Header }
+        components: { Sidebar }
     }
 </script>
 
@@ -51,7 +47,7 @@
     .main {
         background: radial-gradient(1100px 500px at 15% 0%, rgba(50, 130, 255, 0.12), transparent 60%), linear-gradient(165deg, #0b1428 0%, #0d1b2a 100%);
         color: #e8eefc;
-        padding: 22px 26px;
+        padding: 10px 16px;
         overflow-y: auto;
     }
 </style>
