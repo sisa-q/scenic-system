@@ -1742,7 +1742,7 @@ function createControlButtons() {
     btnFull.textContent = '⛶ 全屏'
     btnFull.onclick = () => {
         if (document.fullscreenElement) document.exitFullscreen()
-        else if (container.requestFullscreen) container.requestFullscreen()
+        else if ((container.closest('.dashboard-3d') || container).requestFullscreen) (container.closest('.dashboard-3d') || container).requestFullscreen()
     }
 
     const btnQuality = document.createElement('button')

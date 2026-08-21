@@ -21,8 +21,14 @@
                 </div>
             </div>
         </transition>
-        
         <div class="dashboard-3d">
+            <FlowScene v-if="currentSpot && isOpen(currentSpot)" style="width:100%;height:100%;" />
+            <div v-else class="coming-soon">
+                <div class="soon-glow"></div>
+                <div class="soon-icon">?</div>
+                <div class="soon-title">{{ currentSpot ? currentSpot.name : '景点' }}</div>
+                <div class="soon-text">三维可视化建设中 · 敬请期待</div>
+            </div>
             <div class="dash-metrics">
                 <div class="metric-card"><div class="metric-label">今日订单</div><div class="metric-value">{{ stats.todayOrders || 0 }}</div></div>
                 <div class="metric-card"><div class="metric-label">今日入园</div><div class="metric-value">{{ stats.todayEntered || 0 }}</div></div>
@@ -35,24 +41,15 @@
                 <div class="chart-card"><div class="chart-title">订单状态占比</div><div ref="statusChart" class="chart-box"></div></div>
             </div>
             <div class="dash-todo">
-            <div class="todo-title">待办中心</div>
-            <div v-if="refundList.length" class="todo-list">
-                <div v-for="r in refundList" :key="r.id" class="todo-item" @click="$router.push('/admin/order?status=5')">
-                    <span class="todo-tag">退款审核</span>
-                    <span class="todo-text">{{ r.orderNo }}</span>
-                    <span class="todo-go">去处理 →</span>
+                <div class="todo-title">待办中心</div>
+                <div v-if="refundList.length" class="todo-list">
+                    <div v-for="r in refundList" :key="r.id" class="todo-item" @click="$router.push('/admin/order?status=5')">
+                        <span class="todo-tag">退款审核</span>
+                        <span class="todo-text">{{ r.orderNo }}</span>
+                        <span class="todo-go">去处理 →</span>
+                    </div>
                 </div>
-            </div>
-            <div v-else class="todo-empty">暂无待办</div>
-        </div>
-            <div class="dash-scene">
-                <FlowScene v-if="currentSpot && isOpen(currentSpot)" style="width:100%;height:100%;min-height:560px;" />
-                <div v-else class="coming-soon">
-                    <div class="soon-glow"></div>
-                    <div class="soon-icon">?</div>
-                    <div class="soon-title">{{ currentSpot ? currentSpot.name : '景点' }}</div>
-                    <div class="soon-text">三维可视化建设中 · 敬请期待</div>
-                </div>
+                <div v-else class="todo-empty">暂无待办</div>
             </div>
         </div>
     </div>
@@ -309,4 +306,14 @@
     .dashboard-3d:fullscreen { width: 100vw; height: 100vh; border-radius: 0; }
     .dashboard-3d:fullscreen .dash-side { width: 430px; }
     .dashboard-3d:fullscreen .chart-box { height: 150px; }
+
+    /* ==== 数据模块悬浮在 3D 场景内 ==== */
+    .dashboard-3d { position: relative; }
+    .dashboard-3d > .dash-metrics, .dashboard-3d > .dash-charts, .dashboard-3d > .dash-todo { position: absolute; z-index: 20; }
+    .dash-metrics { top: 10px; left: 10px; right: 10px; }
+    .dash-charts { bottom: 10px; left: 10px; right: 10px; }
+    .dash-todo { right: 10px; top: 76px; width: 232px; }
+    .metric-card { padding: 8px 12px; }
+    .metric-value { font-size: 20px; }
+    .chart-box { height: 118px; }
 </style>
