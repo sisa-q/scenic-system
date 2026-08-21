@@ -101,6 +101,7 @@
             </div>
         </div>
 
+        <SearchPortal :value="searchQuery" @search="onPortalSearch" @cat="onPortalCat" @go-spots="onGoSpots" />
         <TabBar />
     </div>
 </template>
@@ -113,10 +114,11 @@
     import { getNoticeList } from '@/api/notice'
     import { getWeatherBatch, getWeatherNow } from '@/api/weather'
     import TabBar from '@/components/web/TabBar.vue'
+    import SearchPortal from '@/components/web/SearchPortal.vue'
 
     export default {
         name: 'Home',
-        components: { TabBar },
+        components: { TabBar, SearchPortal },
         data() {
             return {
                 spots: [],
@@ -289,6 +291,18 @@
                 }
             },
 
+            onPortalSearch(q) {
+                this.searchQuery = q || ''
+                this.performSearch()
+            },
+            onPortalCat(type) {
+                const names = { hotel: '酒店', flight: '机票', ai: 'AI 助手' }
+                alert('「' + (names[type] || '该') + '」模块建设中，敬请期待')
+            },
+            onGoSpots() {
+                this.clearSearch()
+                alert('点击地球上的国家/景点热点，即可查看详情并购买门票')
+            },
             clearSearch() {
                 this.searchQuery = ''
                 this.selectedName = ''
