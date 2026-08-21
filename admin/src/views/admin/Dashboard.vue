@@ -292,7 +292,7 @@
     .dash-charts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; flex-shrink: 0; }
     .chart-card { background: rgba(16, 28, 56, 0.6); border: 1px solid rgba(120,170,255,0.14); border-radius: 12px; padding: 12px; }
     .chart-title { font-size: 13px; color: #aebcd8; margin-bottom: 8px; }
-    .chart-box { width: 100%; height: 150px; }
+    .chart-box { flex: 1; width: 100%; height: auto; min-height: 90px; }
     .dash-todo { background: rgba(16, 28, 56, 0.6); border: 1px solid rgba(120,170,255,0.14); border-radius: 12px; padding: 8px 14px; margin-bottom: 12px; flex-shrink: 0; }
     .todo-title { font-size: 14px; color: #e8eefc; font-weight: 700; margin-bottom: 8px; }
     .todo-list { display: flex; flex-direction: column; gap: 6px; }
@@ -311,9 +311,9 @@
     .dashboard-3d { position: relative; }
     .dashboard-3d > .dash-metrics, .dashboard-3d > .dash-charts, .dashboard-3d > .dash-todo { position: absolute; z-index: 20; }
     .dash-metrics { top: 10px; left: 10px; right: 10px; }
-    .dash-charts { bottom: 10px; left: 10px; right: 10px; }
-    .dash-todo { right: 10px; top: 76px; width: 232px; }
+    .dash-charts { left: 10px; top: 76px; bottom: 10px; width: 268px; display: flex; flex-direction: column; gap: 10px; }
+    .dash-todo { right: 10px; top: 76px; bottom: 10px; width: 236px; overflow-y: auto; }
     .metric-card { padding: 8px 12px; }
     .metric-value { font-size: 20px; }
-    .chart-box { height: 118px; }
+    .chart-card { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 </style>
