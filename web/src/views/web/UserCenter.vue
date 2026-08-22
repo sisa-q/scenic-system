@@ -25,11 +25,10 @@
                     <div class="uc-wallet-balance">￥{{ fmt(userInfo.balance) }}</div>
                     <div class="uc-wallet-tip">模拟支付从余额扣款，退款自动退回</div>
                 </div>
-                <div class="uc-section-title">支付宝沙箱公共测试账号</div>
+                <div class="uc-section-title">支付宝沙箱买家测试账号</div>
                 <div class="uc-card uc-sandbox">
-                    <div class="uc-sandbox-row"><span>商户余额</span><span>￥{{ fmt(sandbox.merchant.balance) }}</span></div>
                     <div class="uc-sandbox-row"><span>买家余额</span><span>￥{{ fmt(sandbox.buyer.balance) }}</span></div>
-                    <div class="uc-sandbox-tip">此账号为支付宝沙箱公共测试账号，所有游客共用，仅供演示</div>
+                    <div class="uc-sandbox-tip">此账号为支付宝沙箱买家测试账号，所有游客共用，仅供演示</div>
                 </div>
             </div>
         </div>

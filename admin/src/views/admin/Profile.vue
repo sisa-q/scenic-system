@@ -42,7 +42,7 @@
         </div>
 
         <el-card class="sandbox-card">
-            <template #header>支付宝沙箱账号（公共测试）</template>
+            <template #header>商户沙箱账号</template>
             <div class="sandbox-grid">
                 <div class="sandbox-col">
                     <div class="sandbox-col-title">商户账号</div>
@@ -51,16 +51,8 @@
                     <div class="sandbox-row"><span>商户 PID：</span><span>{{ sandbox.merchant.pidUid || '-' }}</span></div>
                     <div class="sandbox-row"><span>账户余额：</span><span class="sb-balance">￥{{ fmt(sandbox.merchant.balance) }}</span></div>
                 </div>
-                <div class="sandbox-col">
-                    <div class="sandbox-col-title">买家账号</div>
-                    <div class="sandbox-row"><span>账号：</span><span>{{ sandbox.buyer.account || '-' }}</span></div>
-                    <div class="sandbox-row"><span>登录密码：</span><span>{{ sandbox.buyer.password || '-' }}</span></div>
-                    <div class="sandbox-row"><span>支付密码：</span><span>{{ sandbox.buyer.payPassword || '-' }}</span></div>
-                    <div class="sandbox-row"><span>买家 UID：</span><span>{{ sandbox.buyer.pidUid || '-' }}</span></div>
-                    <div class="sandbox-row"><span>账户余额：</span><span class="sb-balance">￥{{ fmt(sandbox.buyer.balance) }}</span></div>
-                </div>
             </div>
-            <div class="sandbox-tip">支付宝沙箱公共测试账号：所有游客共用，仅供演示，余额随支付/退款/充值联动。</div>
+            <div class="sandbox-tip">商户测试账号：仅供演示，余额随支付/退款/充值联动。</div>
         </el-card>
     </div>
 </template>
@@ -147,7 +139,7 @@
         .profile-wallet { position: static; }
     }
     .sandbox-card { margin-top: 16px; }
-    .sandbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .sandbox-grid { display: grid; grid-template-columns: 1fr; gap: 24px; }
     .sandbox-col-title { font-size: 15px; font-weight: 700; color: #e8eefc; margin-bottom: 10px; }
     .sandbox-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; color: #b8c6e0; border-bottom: 1px solid rgba(120,170,255,0.08); }
     .sb-balance { color: #4da3ff; font-weight: 700; }
