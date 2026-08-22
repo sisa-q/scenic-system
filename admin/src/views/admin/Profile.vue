@@ -25,7 +25,7 @@
         <el-card style="max-width: 620px; margin-top: 16px;">
             <template #header>
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span>商户沙箱账号</span>
+                    <span>商家信息</span>
                     <el-button type="warning" plain size="small" @click="handleReset">重置余额</el-button>
                 </div>
             </template>
@@ -35,6 +35,12 @@
                 <el-descriptions-item label="商户账号 PID">{{ merchant.pidUid || '-' }}</el-descriptions-item>
                 <el-descriptions-item label="账户余额">￥{{ fmt(merchant.balance) }}</el-descriptions-item>
             </el-descriptions>
+            <div style="margin-top: 12px; display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 13px; color: #909399;">金额</span>
+                <el-input-number v-model="amount" :min="0.01" :precision="2" :step="100" size="small" style="width: 160px;" />
+                <el-button type="primary" size="small" @click="handleBalance('recharge')">充值</el-button>
+                <el-button type="danger" plain size="small" @click="handleBalance('withdraw')">取现</el-button>
+            </div>
             <div style="margin-top: 12px; font-size: 12px; color: #909399;">模拟支付/退款会同步更新商户与买家余额；对账后续由两端订单数据汇总。</div>
         </el-card>
     </div>
@@ -43,7 +49,7 @@
 <script>
     import { useUserStore } from '@/store/modules/user'
     import { updateProfile } from '@/api/user'
-    import { getSandboxMerchant, resetSandbox } from '@/api/pay'
+    import { getSandboxMerchant, sandboxRecharge, sandboxWithdraw, resetSandbox } from '@/api/pay'
     import { ElMessage, ElMessageBox } from 'element-plus'
 
     export default {
@@ -51,7 +57,8 @@
         data() {
             return {
                 form: { nickname: '', phone: '' },
-                merchant: {}
+                merchant: {},
+                amount: 100
             }
         },
         mounted() {
@@ -80,6 +87,21 @@
                     this.loadMerchant()
                 } catch (e) {
                     // canceled or failed
+                }
+            },
+            async handleBalance(action) {
+                const amt = Number(this.amount)
+                if (!amt || amt <= 0) {
+                    ElMessage.warning('请输入有效金额')
+                    return
+                }
+                try {
+                    const fn = action === 'recharge' ? sandboxRecharge : sandboxWithdraw
+                    await fn({ role: 'merchant', amount: amt })
+                    ElMessage.success(action === 'recharge' ? '充值成功' : '取现成功')
+                    this.loadMerchant()
+                } catch (e) {
+                    // error toast handled by interceptor
                 }
             },
             handleLogout() {

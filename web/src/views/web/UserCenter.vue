@@ -11,12 +11,24 @@
             <van-cell title="角色" :value="userInfo.role === 'admin' ? '管理员' : '普通游客'" />
         </van-cell-group>
 
-        <van-cell-group inset title="沙箱账户">
+        <van-cell-group inset title="买家信息">
             <van-cell title="买家账号" :value="buyer.account || '-'" />
             <van-cell title="登录密码" :value="buyer.password || '111111'" />
-            <van-cell title="买家 UID" :value="buyer.pidUid || '-'" />
+            <van-cell title="支付密码" :value="buyer.payPassword || '111111'" />
+            <van-cell title="用户 UID" :value="buyer.pidUid || '-'" />
+            <van-cell title="用户名称" :value="buyer.userName || buyer.account || '-'" />
+            <van-cell title="证件类型" :value="buyer.idType || 'IDENTITY_CARD'" />
+            <van-cell title="证件账号" :value="buyer.idNo || '-'" />
             <van-cell title="账户余额" :value="'￥' + fmt(buyer.balance)" />
         </van-cell-group>
+
+        <van-cell-group inset>
+            <van-field v-model="amount" type="number" label="金额" placeholder="请输入金额" />
+        </van-cell-group>
+        <div style="padding: 0 16px; margin-bottom: 12px; display: flex; gap: 12px;">
+            <van-button type="primary" block round @click="handleBalance('recharge')">充值</van-button>
+            <van-button type="danger" block round plain @click="handleBalance('withdraw')">取现</van-button>
+        </div>
 
         <div style="padding: 16px; display: flex; flex-direction: column; gap: 12px">
             <van-button type="default" block round @click="handleLogout">退出登录</van-button>
@@ -30,7 +42,7 @@
 <script>
     import { useUserStore } from '@/store/modules/user'
     import { deleteAccount } from '@/api/user'
-    import { getSandboxBuyer } from '@/api/pay'
+    import { getSandboxBuyer, sandboxRecharge, sandboxWithdraw } from '@/api/pay'
     import TabBar from '@/components/web/TabBar.vue'
     import { showConfirmDialog, showToast } from 'vant'
 
@@ -40,7 +52,8 @@
         data() {
             return {
                 refreshTimer: null,
-                buyer: {}
+                buyer: {},
+                amount: 100
             }
         },
         computed: {
@@ -58,6 +71,21 @@
                     this.buyer = res.data || {}
                 } catch (e) {
                     console.error('load buyer sandbox account failed', e)
+                }
+            },
+            async handleBalance(action) {
+                const amt = Number(this.amount)
+                if (!amt || amt <= 0) {
+                    showToast('请输入有效金额')
+                    return
+                }
+                try {
+                    const fn = action === 'recharge' ? sandboxRecharge : sandboxWithdraw
+                    await fn({ role: 'buyer', amount: amt })
+                    showToast(action === 'recharge' ? '充值成功' : '取现成功')
+                    this.loadBuyer()
+                } catch (e) {
+                    // error toast handled by interceptor
                 }
             },
             // ====== 个人账号数据实时同步：自动轮询 ======

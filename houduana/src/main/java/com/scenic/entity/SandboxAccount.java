@@ -30,6 +30,22 @@ public class SandboxAccount {
     @Column(nullable = false, length = 32, columnDefinition = "varchar(32) default '111111' not null")
     private String password = "111111";
 
+    /** 支付密码（买家） */
+    @Column(length = 32)
+    private String payPassword;
+
+    /** 用户名称（买家） */
+    @Column(length = 64)
+    private String userName;
+
+    /** 证件类型（买家，如 IDENTITY_CARD） */
+    @Column(length = 32)
+    private String idType;
+
+    /** 证件账号（买家） */
+    @Column(length = 32)
+    private String idNo;
+
     @Column(nullable = false, precision = 14, scale = 2)
     private BigDecimal balance;
 

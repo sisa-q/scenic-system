@@ -42,10 +42,25 @@ public class SandboxAccountService {
     @Autowired(required = false)
     private PayTransactionRepository payTransactionRepository;
 
+    /** 老数据迁移：补齐买家扩展信息 */
+    private void backfillBuyerFields() {
+        if (accountRepo == null) return;
+        for (SandboxAccount acc : accountRepo.findAll()) {
+            if (!ROLE_BUYER.equals(acc.getRole())) continue;
+            boolean dirty = false;
+            if (acc.getPayPassword() == null) { acc.setPayPassword("111111"); dirty = true; }
+            if (acc.getUserName() == null) { acc.setUserName(acc.getAccount()); dirty = true; }
+            if (acc.getIdType() == null) { acc.setIdType("IDENTITY_CARD"); dirty = true; }
+            if (acc.getIdNo() == null) { acc.setIdNo("87374919680304089X"); dirty = true; }
+            if (dirty) { acc.setUpdateTime(new Date()); accountRepo.save(acc); }
+        }
+    }
+
     /** 确保商户/买家沙箱账户存在（幂等，懒初始化） */
     @Transactional
     public synchronized void ensureAccounts() {
         if (accountRepo == null) return;
+        backfillBuyerFields();
         if (accountRepo.count() > 0) return;
         createAccount(ROLE_MERCHANT, MERCHANT_ACCOUNT, MERCHANT_PID, "商户");
         createAccount(ROLE_BUYER, BUYER_ACCOUNT, BUYER_UID, "买家");
@@ -103,12 +118,51 @@ public class SandboxAccountService {
         return accountRepo.findByRole(ROLE_BUYER).orElse(null);
     }
 
+    /** 充值：增加账户余额 */
+    @Transactional
+    public synchronized SandboxAccount recharge(String role, BigDecimal amount) {
+        if (accountRepo == null) return null;
+        ensureAccounts();
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) throw new RuntimeException("金额必须大于 0");
+        BigDecimal amt = amount.setScale(2, RoundingMode.HALF_UP);
+        SandboxAccount acc = accountRepo.findByRole(role).orElse(null);
+        if (acc == null) throw new RuntimeException("账户不存在");
+        acc.setBalance(acc.getBalance().add(amt));
+        acc.setUpdateTime(new Date());
+        accountRepo.save(acc);
+        log.info("[Sandbox] 充值 role={}, amount={}", role, amt);
+        return acc;
+    }
+
+    /** 取现：减少账户余额 */
+    @Transactional
+    public synchronized SandboxAccount withdraw(String role, BigDecimal amount) {
+        if (accountRepo == null) return null;
+        ensureAccounts();
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) throw new RuntimeException("金额必须大于 0");
+        BigDecimal amt = amount.setScale(2, RoundingMode.HALF_UP);
+        SandboxAccount acc = accountRepo.findByRole(role).orElse(null);
+        if (acc == null) throw new RuntimeException("账户不存在");
+        if (acc.getBalance().compareTo(amt) < 0) throw new RuntimeException("余额不足");
+        acc.setBalance(acc.getBalance().subtract(amt));
+        acc.setUpdateTime(new Date());
+        accountRepo.save(acc);
+        log.info("[Sandbox] 取现 role={}, amount={}", role, amt);
+        return acc;
+    }
+
     private void createAccount(String role, String account, String pidUid, String nickname) {
         SandboxAccount acc = new SandboxAccount();
         acc.setRole(role);
         acc.setAccount(account);
         acc.setPidUid(pidUid);
         acc.setPassword(SANDBOX_PASSWORD);
+        if (ROLE_BUYER.equals(role)) {
+            acc.setPayPassword("111111");
+            acc.setUserName(account);
+            acc.setIdType("IDENTITY_CARD");
+            acc.setIdNo("87374919680304089X");
+        }
         acc.setBalance(INITIAL_BALANCE);
         acc.setUpdateTime(new Date());
         accountRepo.save(acc);
