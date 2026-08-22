@@ -140,7 +140,7 @@
     .uc-wallet-ops :deep(.van-field__control) { color: #e8eefc; }
     .uc-wallet-btns { display: flex; gap: 12px; margin-top: 12px; }
     @media (min-width: 768px) {
-        .uc-body { max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+        .uc-body { max-width: none; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
         .uc-left { display: flex; flex-direction: column; }
         .uc-right { display: flex; flex-direction: column; }
         .uc-actions { margin-top: 16px; }
