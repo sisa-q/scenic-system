@@ -22,7 +22,8 @@ public class SandboxAccountService {
 
     private static final Logger log = LoggerFactory.getLogger(SandboxAccountService.class);
 
-    private static final BigDecimal INITIAL_BALANCE = new BigDecimal("1000000.00");
+    private static final BigDecimal MERCHANT_INITIAL_BALANCE = new BigDecimal("1000850.00");
+    private static final BigDecimal BUYER_INITIAL_BALANCE = new BigDecimal("999150.00");
 
     private static final String ROLE_MERCHANT = "merchant";
     private static final String ROLE_BUYER = "buyer";
@@ -64,7 +65,7 @@ public class SandboxAccountService {
         if (accountRepo.count() > 0) return;
         createAccount(ROLE_MERCHANT, MERCHANT_ACCOUNT, MERCHANT_PID, "商户");
         createAccount(ROLE_BUYER, BUYER_ACCOUNT, BUYER_UID, "买家");
-        log.info("[Sandbox] 初始化沙箱账户：商户/买家各 {} 元", INITIAL_BALANCE);
+        log.info("[Sandbox] 初始化沙箱账户：商户 {} / 买家 {}", MERCHANT_INITIAL_BALANCE, BUYER_INITIAL_BALANCE);
     }
 
     /** 支付成功联动：买家余额减少、商户余额增加（幂等由调用方保证：仅首次确认时触发） */
@@ -98,11 +99,11 @@ public class SandboxAccountService {
         if (accountRepo == null) return;
         ensureAccounts();
         for (SandboxAccount acc : accountRepo.findAll()) {
-            acc.setBalance(INITIAL_BALANCE);
+            acc.setBalance(ROLE_MERCHANT.equals(acc.getRole()) ? MERCHANT_INITIAL_BALANCE : BUYER_INITIAL_BALANCE);
             acc.setUpdateTime(new Date());
             accountRepo.save(acc);
         }
-        log.info("[Sandbox] 沙箱账户余额已重置为 {}", INITIAL_BALANCE);
+        log.info("[Sandbox] 沙箱账户余额已重置为 商户 {} / 买家 {}", MERCHANT_INITIAL_BALANCE, BUYER_INITIAL_BALANCE);
     }
 
     public SandboxAccount getMerchantAccount() {
@@ -162,7 +163,7 @@ public class SandboxAccountService {
             acc.setIdType("IDENTITY_CARD");
             acc.setIdNo("87374919680304089X");
         }
-        acc.setBalance(INITIAL_BALANCE);
+        acc.setBalance(ROLE_MERCHANT.equals(role) ? MERCHANT_INITIAL_BALANCE : BUYER_INITIAL_BALANCE);
         acc.setUpdateTime(new Date());
         accountRepo.save(acc);
     }

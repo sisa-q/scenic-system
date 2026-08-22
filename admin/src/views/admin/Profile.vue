@@ -38,13 +38,6 @@
                 <div class="wallet-label">当前余额</div>
                 <div class="wallet-balance">￥{{ fmt(userInfo.balance) }}</div>
                 <div class="wallet-tip">模拟支付从余额扣款，退款自动退回</div>
-                <div class="wallet-ops">
-                    <el-input-number v-model="amount" :min="0.01" :precision="2" :step="100" size="small" style="width:160px;" />
-                    <div class="wallet-btns">
-                        <el-button type="primary" size="small" @click="handleWallet('recharge')">充值</el-button>
-                        <el-button type="danger" plain size="small" @click="handleWallet('withdraw')">取现</el-button>
-                    </div>
-                </div>
             </el-card>
         </div>
 
@@ -74,7 +67,7 @@
 
 <script>
     import { useUserStore } from '@/store/modules/user'
-    import { updateProfile, walletRecharge, walletWithdraw } from '@/api/user'
+    import { updateProfile } from '@/api/user'
     import { getSandboxAccounts } from '@/api/pay'
     import { ElMessage, ElMessageBox } from 'element-plus'
 
@@ -83,7 +76,6 @@
         data() {
             return {
                 form: { avatar: '', nickname: '', phone: '', email: '', gender: '保密', birthday: '', signature: '', oldPassword: '', newPassword: '', confirmPassword: '' },
-                amount: 100,
                 sandbox: { merchant: {}, buyer: {} }
             }
         },
@@ -136,16 +128,6 @@
                     this.form.confirmPassword = ''
                 } catch (e) { console.error('save profile failed', e) }
             },
-            async handleWallet(action) {
-                const amt = Number(this.amount)
-                if (!amt || amt <= 0) { ElMessage.warning('请输入有效金额'); return }
-                try {
-                    const fn = action === 'recharge' ? walletRecharge : walletWithdraw
-                    await fn({ amount: amt })
-                    await useUserStore().getUserInfo()
-                    ElMessage.success(action === 'recharge' ? '充值成功' : '取现成功')
-                } catch (e) {}
-            }
         }
     }
 </script>

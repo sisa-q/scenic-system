@@ -24,13 +24,6 @@
                 <div class="uc-card uc-wallet">
                     <div class="uc-wallet-balance">￥{{ fmt(userInfo.balance) }}</div>
                     <div class="uc-wallet-tip">模拟支付从余额扣款，退款自动退回</div>
-                    <div class="uc-wallet-ops">
-                        <van-field v-model="amount" type="number" label="金额" placeholder="请输入金额" class="uc-amount" />
-                        <div class="uc-wallet-btns">
-                            <van-button type="primary" block round @click="handleWallet('recharge')">充值</van-button>
-                            <van-button type="danger" block round plain @click="handleWallet('withdraw')">取现</van-button>
-                        </div>
-                    </div>
                 </div>
                 <div class="uc-section-title">支付宝沙箱公共测试账号</div>
                 <div class="uc-card uc-sandbox">
@@ -46,7 +39,7 @@
 
 <script>
     import { useUserStore } from '@/store/modules/user'
-    import { deleteAccount, walletRecharge, walletWithdraw } from '@/api/user'
+    import { deleteAccount } from '@/api/user'
     import { getSandboxAccounts } from '@/api/pay'
     import TabBar from '@/components/web/TabBar.vue'
     import { showConfirmDialog, showToast } from 'vant'
@@ -55,7 +48,7 @@
         name: 'UserCenter',
         components: { TabBar },
         data() {
-            return { refreshTimer: null, amount: 100, sandbox: { merchant: {}, buyer: {} } }
+            return { refreshTimer: null, sandbox: { merchant: {}, buyer: {} } }
         },
         computed: {
             userInfo() { return useUserStore().userInfo || {} }
@@ -72,16 +65,6 @@
                 const token = localStorage.getItem('token')
                 if (!token) { showToast('请先登录'); this.$router.replace('/login'); return }
                 this.$router.push('/profile')
-            },
-            async handleWallet(action) {
-                const amt = Number(this.amount)
-                if (!amt || amt <= 0) { showToast('请输入有效金额'); return }
-                try {
-                    const fn = action === 'recharge' ? walletRecharge : walletWithdraw
-                    await fn({ amount: amt })
-                    await useUserStore().getUserInfo()
-                    showToast(action === 'recharge' ? '充值成功' : '取现成功')
-                } catch (e) {}
             },
             startAutoRefresh() {
                 this.stopAutoRefresh()
