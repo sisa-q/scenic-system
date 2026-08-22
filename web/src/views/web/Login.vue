@@ -54,18 +54,6 @@
                         placeholder="至少6位"
                         type="password"
                 />
-                <van-field
-                        v-model="registerForm.nickname"
-                        label="昵称"
-                        placeholder="选填"
-                        type="text"
-                />
-                <van-field
-                        v-model="registerForm.phone"
-                        label="手机号"
-                        placeholder="选填"
-                        type="tel"
-                />
                 <div style="margin: 16px 0">
                     <van-button
                             type="primary"
@@ -90,7 +78,6 @@
     import { useUserStore } from '@/store/modules/user'
     import { registerApi } from '@/api/user'
     import { getSpotList } from '@/api/ticket'
-    import { isValidPhone } from '@/utils/validator'
     import { showToast } from 'vant'
 
     export default {
@@ -102,7 +89,7 @@
                 loginLoading: false,
                 registerLoading: false,
                 loginForm: { username: '', password: '' },
-                registerForm: { username: '', password: '', nickname: '', phone: '' },
+                registerForm: { username: '', password: '' },
 
                 // Canvas 动画参数
                 canvas: null,
@@ -509,9 +496,6 @@
             async onRegister() {
                 const username = this.registerForm.username.trim()
                 const password = this.registerForm.password
-                const nickname = this.registerForm.nickname.trim() || username
-                const phone = this.registerForm.phone.trim()
-
                 if (!username || username.length < 4 || username.length > 20) {
                     showToast('用户名4-20位字母或数字')
                     return
@@ -524,18 +508,14 @@
                     showToast('密码至少6位')
                     return
                 }
-                if (phone && !isValidPhone(phone)) {
-                    showToast('请输入正确的手机号')
-                    return
-                }
 
                 this.registerLoading = true
                 try {
-                    await registerApi({ username, password, nickname, phone, role: 'user' })
+                    await registerApi({ username, password, nickname: username, role: 'user' })
                     showToast('注册成功，请登录')
                     this.loginForm.username = username
                     this.isLoginMode = true
-                    this.registerForm = { username: '', password: '', nickname: '', phone: '' }
+                    this.registerForm = { username: '', password: '' }
                 } catch (e) {
                     showToast(e.msg || e.message || '注册失败')
                 } finally {
