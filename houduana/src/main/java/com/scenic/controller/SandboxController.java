@@ -6,9 +6,7 @@ import com.scenic.vo.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
-
-/** 支付宝沙箱账户镜像（本地模拟）：管理端对账查看/重置 */
+/** Alipay sandbox account mirror (local mock): merchant in admin personal center, buyer in tourist personal center */
 @RestController
 @RequestMapping("/api/pay/sandbox")
 public class SandboxController {
@@ -19,29 +17,28 @@ public class SandboxController {
     @Autowired
     private JwtUtil jwtUtil;
 
-    /** 查询沙箱账户余额（商户/买家） */
-    @GetMapping("/accounts")
-    public Result accounts(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+    /** Query merchant sandbox account (admin only, shown in admin personal center) */
+    @GetMapping("/merchant")
+    public Result merchant(@RequestHeader(value = "Authorization", required = false) String authHeader) {
         try {
             if (!isAdmin(authHeader)) return Result.error("仅管理员可查看");
-            return Result.success(sandboxAccountService == null ? Collections.emptyList() : sandboxAccountService.listAccounts());
+            return Result.success(sandboxAccountService == null ? null : sandboxAccountService.getMerchantAccount());
         } catch (Exception e) {
             return Result.error("查询失败：" + e.getMessage());
         }
     }
 
-    /** 查询沙箱余额变动流水 */
-    @GetMapping("/flows")
-    public Result flows(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+    /** Query buyer sandbox account (any logged-in user, shown in tourist personal center) */
+    @GetMapping("/buyer")
+    public Result buyer() {
         try {
-            if (!isAdmin(authHeader)) return Result.error("仅管理员可查看");
-            return Result.success(sandboxAccountService == null ? Collections.emptyList() : sandboxAccountService.listFlows());
+            return Result.success(sandboxAccountService == null ? null : sandboxAccountService.getBuyerAccount());
         } catch (Exception e) {
             return Result.error("查询失败：" + e.getMessage());
         }
     }
 
-    /** 重置沙箱账户余额为初始值并清空流水（演示/校准用） */
+    /** Reset sandbox balances to initial value (demo calibration) */
     @PostMapping("/reset")
     public Result reset(@RequestHeader(value = "Authorization", required = false) String authHeader) {
         try {

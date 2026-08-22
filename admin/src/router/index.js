@@ -43,11 +43,6 @@ const routes = [
                 meta: { title: '订单管理', icon: 'List' }
             },
             {
-                path: 'sandbox',
-                component: () => import('@/views/admin/SandboxAccount.vue'),
-                meta: { title: '沙箱对账', icon: 'Wallet' }
-            },
-            {
                 path: 'evaluation',
                 component: () => import('@/views/admin/Evaluation.vue'),
                 meta: { title: '评价管理', icon: 'Star' }

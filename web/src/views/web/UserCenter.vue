@@ -11,6 +11,13 @@
             <van-cell title="角色" :value="userInfo.role === 'admin' ? '管理员' : '普通游客'" />
         </van-cell-group>
 
+        <van-cell-group inset title="沙箱账户">
+            <van-cell title="买家账号" :value="buyer.account || '-'" />
+            <van-cell title="登录密码" :value="buyer.password || '111111'" />
+            <van-cell title="买家 UID" :value="buyer.pidUid || '-'" />
+            <van-cell title="账户余额" :value="'￥' + fmt(buyer.balance)" />
+        </van-cell-group>
+
         <div style="padding: 16px; display: flex; flex-direction: column; gap: 12px">
             <van-button type="default" block round @click="handleLogout">退出登录</van-button>
             <van-button type="danger" block round plain @click="handleDeleteAccount">注销账号</van-button>
@@ -23,6 +30,7 @@
 <script>
     import { useUserStore } from '@/store/modules/user'
     import { deleteAccount } from '@/api/user'
+    import { getSandboxBuyer } from '@/api/pay'
     import TabBar from '@/components/web/TabBar.vue'
     import { showConfirmDialog, showToast } from 'vant'
 
@@ -31,7 +39,8 @@
         components: { TabBar },
         data() {
             return {
-                refreshTimer: null
+                refreshTimer: null,
+                buyer: {}
             }
         },
         computed: {
@@ -40,6 +49,17 @@
             }
         },
         methods: {
+            fmt(v) {
+                return Number(v || 0).toFixed(2)
+            },
+            async loadBuyer() {
+                try {
+                    const res = await getSandboxBuyer()
+                    this.buyer = res.data || {}
+                } catch (e) {
+                    console.error('load buyer sandbox account failed', e)
+                }
+            },
             // ====== 个人账号数据实时同步：自动轮询 ======
             startAutoRefresh() {
                 this.stopAutoRefresh()
@@ -110,6 +130,7 @@
                 return
             }
             // 个人账号数据实时同步：每 5 秒静默刷新用户信息
+            this.loadBuyer()
             this.startAutoRefresh()
             document.addEventListener('visibilitychange', this.onVisibilityChange)
         },

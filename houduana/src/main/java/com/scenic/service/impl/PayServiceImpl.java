@@ -167,12 +167,15 @@ public class PayServiceImpl implements PayService {
         String tradeNo = "MOCK" + order.getOrderNo();
         String totalAmount = order.getTotalAmount() == null ? "0.00" : order.getTotalAmount().toPlainString();
         // 模拟支付：不走支付宝验签通道，直接确认订单（与真实支付宝彻底解耦，不受 channel 影响）
+        // 首次确认才联动沙箱余额：重复确认（幂等）不再重复加减
+        boolean firstConfirm = payTransactionRepository == null
+                || !payTransactionRepository.findByTransactionId(tradeNo).isPresent();
         String result = confirmPaidOrder(order.getOrderNo(), tradeNo, totalAmount, "mock");
         if (!SUCCESS.equals(result)) {
             throw new RuntimeException("模拟支付确认失败");
         }
         // 模拟支付联动：同步沙箱账户镜像（买家减、商户加）——模拟模式始终更新，不受 channel 影响
-        if (sandboxAccountService != null) {
+        if (firstConfirm && sandboxAccountService != null) {
             try {
                 sandboxAccountService.onPaid(order.getOrderNo(), order.getTotalAmount());
             } catch (Exception ignored) {

@@ -1,16 +1,11 @@
 import request from './request'
 
-/** 查询沙箱账户（商户/买家余额） */
-export function getSandboxAccounts() {
-    return request.get('/pay/sandbox/accounts')
+/** query merchant sandbox account (shown in admin personal center) */
+export function getSandboxMerchant() {
+    return request.get('/pay/sandbox/merchant')
 }
 
-/** 查询沙箱余额变动流水 */
-export function getSandboxFlows() {
-    return request.get('/pay/sandbox/flows')
-}
-
-/** 重置沙箱余额为初始值 */
+/** reset sandbox balances to initial value */
 export function resetSandbox() {
     return request.post('/pay/sandbox/reset')
 }

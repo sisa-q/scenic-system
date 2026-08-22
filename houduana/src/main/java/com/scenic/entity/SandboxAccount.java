@@ -26,6 +26,10 @@ public class SandboxAccount {
     @Column(length = 32)
     private String pidUid;
 
+    /** 沙箱登录密码（支付宝沙箱统一密码 111111） */
+    @Column(nullable = false, length = 32, columnDefinition = "varchar(32) default '111111' not null")
+    private String password = "111111";
+
     @Column(nullable = false, precision = 14, scale = 2)
     private BigDecimal balance;
 

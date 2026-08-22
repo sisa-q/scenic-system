@@ -21,27 +21,67 @@
                 </el-form-item>
             </el-form>
         </el-card>
+
+        <el-card style="max-width: 620px; margin-top: 16px;">
+            <template #header>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>商户沙箱账号</span>
+                    <el-button type="warning" plain size="small" @click="handleReset">重置余额</el-button>
+                </div>
+            </template>
+            <el-descriptions :column="1" border>
+                <el-descriptions-item label="商户账号">{{ merchant.account || '-' }}</el-descriptions-item>
+                <el-descriptions-item label="登录密码">{{ merchant.password || '111111' }}</el-descriptions-item>
+                <el-descriptions-item label="商户账号 PID">{{ merchant.pidUid || '-' }}</el-descriptions-item>
+                <el-descriptions-item label="账户余额">￥{{ fmt(merchant.balance) }}</el-descriptions-item>
+            </el-descriptions>
+            <div style="margin-top: 12px; font-size: 12px; color: #909399;">模拟支付/退款会同步更新商户与买家余额；对账后续由两端订单数据汇总。</div>
+        </el-card>
     </div>
 </template>
 
 <script>
     import { useUserStore } from '@/store/modules/user'
     import { updateProfile } from '@/api/user'
+    import { getSandboxMerchant, resetSandbox } from '@/api/pay'
     import { ElMessage, ElMessageBox } from 'element-plus'
 
     export default {
         name: 'Profile',
         data() {
             return {
-                form: { nickname: '', phone: '' }
+                form: { nickname: '', phone: '' },
+                merchant: {}
             }
         },
         mounted() {
             const info = useUserStore().userInfo
             this.form.nickname = info.nickname || ''
             this.form.phone = info.phone || ''
+            this.loadMerchant()
         },
         methods: {
+            fmt(v) {
+                return Number(v || 0).toFixed(2)
+            },
+            async loadMerchant() {
+                try {
+                    const res = await getSandboxMerchant()
+                    this.merchant = res.data || {}
+                } catch (e) {
+                    console.error('load merchant sandbox account failed', e)
+                }
+            },
+            async handleReset() {
+                try {
+                    await ElMessageBox.confirm('确认将商户余额重置为 1000000.00 ？', '重置沙箱', { type: 'warning' })
+                    await resetSandbox()
+                    ElMessage.success('已重置')
+                    this.loadMerchant()
+                } catch (e) {
+                    // canceled or failed
+                }
+            },
             handleLogout() {
                 ElMessageBox.confirm('确定退出登录吗？', '提示', { type: 'warning' })
                     .then(() => {
