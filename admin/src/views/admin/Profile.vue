@@ -47,12 +47,35 @@
                 </div>
             </el-card>
         </div>
+
+        <el-card class="sandbox-card">
+            <template #header>支付宝沙箱账号（公共测试）</template>
+            <div class="sandbox-grid">
+                <div class="sandbox-col">
+                    <div class="sandbox-col-title">商户账号</div>
+                    <div class="sandbox-row"><span>账号：</span><span>{{ sandbox.merchant.account || '-' }}</span></div>
+                    <div class="sandbox-row"><span>登录密码：</span><span>{{ sandbox.merchant.password || '-' }}</span></div>
+                    <div class="sandbox-row"><span>商户 PID：</span><span>{{ sandbox.merchant.pidUid || '-' }}</span></div>
+                    <div class="sandbox-row"><span>账户余额：</span><span class="sb-balance">￥{{ fmt(sandbox.merchant.balance) }}</span></div>
+                </div>
+                <div class="sandbox-col">
+                    <div class="sandbox-col-title">买家账号</div>
+                    <div class="sandbox-row"><span>账号：</span><span>{{ sandbox.buyer.account || '-' }}</span></div>
+                    <div class="sandbox-row"><span>登录密码：</span><span>{{ sandbox.buyer.password || '-' }}</span></div>
+                    <div class="sandbox-row"><span>支付密码：</span><span>{{ sandbox.buyer.payPassword || '-' }}</span></div>
+                    <div class="sandbox-row"><span>买家 UID：</span><span>{{ sandbox.buyer.pidUid || '-' }}</span></div>
+                    <div class="sandbox-row"><span>账户余额：</span><span class="sb-balance">￥{{ fmt(sandbox.buyer.balance) }}</span></div>
+                </div>
+            </div>
+            <div class="sandbox-tip">支付宝沙箱公共测试账号：所有游客共用，仅供演示，余额随支付/退款/充值联动。</div>
+        </el-card>
     </div>
 </template>
 
 <script>
     import { useUserStore } from '@/store/modules/user'
     import { updateProfile, walletRecharge, walletWithdraw } from '@/api/user'
+    import { getSandboxAccounts } from '@/api/pay'
     import { ElMessage, ElMessageBox } from 'element-plus'
 
     export default {
@@ -60,7 +83,8 @@
         data() {
             return {
                 form: { avatar: '', nickname: '', phone: '', email: '', gender: '保密', birthday: '', signature: '', oldPassword: '', newPassword: '', confirmPassword: '' },
-                amount: 100
+                amount: 100,
+                sandbox: { merchant: {}, buyer: {} }
             }
         },
         computed: {
@@ -75,11 +99,18 @@
             this.form.gender = info.gender || '保密'
             this.form.birthday = info.birthday || ''
             this.form.signature = info.signature || ''
+            this.loadSandbox()
         },
         methods: {
             fmt(v) { return Number(v || 0).toFixed(2) },
             isValidPhone(v) { return /^1[3-9]\d{9}$/.test(v) },
             isValidEmail(v) { return /^[\w.+-]+@[\w-]+(\.[\w-]+)+$/.test(v) },
+            async loadSandbox() {
+                try {
+                    const res = await getSandboxAccounts()
+                    this.sandbox = res.data || { merchant: {}, buyer: {} }
+                } catch (e) {}
+            },
             handleLogout() {
                 ElMessageBox.confirm('确定退出登录吗？', '提示', { type: 'warning' })
                     .then(async () => { const store = useUserStore(); await store.logout(); window.location.href = '/login' })
@@ -133,4 +164,11 @@
         .profile-grid { grid-template-columns: 1fr; }
         .profile-wallet { position: static; }
     }
+    .sandbox-card { margin-top: 16px; }
+    .sandbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .sandbox-col-title { font-size: 15px; font-weight: 700; color: #e8eefc; margin-bottom: 10px; }
+    .sandbox-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; color: #b8c6e0; border-bottom: 1px solid rgba(120,170,255,0.08); }
+    .sb-balance { color: #4da3ff; font-weight: 700; }
+    .sandbox-tip { margin-top: 12px; font-size: 12px; color: #5f7399; }
+    @media (max-width: 768px) { .sandbox-grid { grid-template-columns: 1fr; } }
 </style>

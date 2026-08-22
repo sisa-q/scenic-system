@@ -10,8 +10,8 @@
                     <van-image round width="60" height="60" :src="userInfo.avatar || 'https://img.yzcdn.cn/vant/cat.jpeg'" fit="cover" class="uc-avatar" />
                     <div class="uc-info">
                         <div class="uc-name">{{ userInfo.nickname || '未设置' }}</div>
-                        <div class="uc-meta">{{ userInfo.phone || '未绑定手机号' }} ? {{ userInfo.role === 'admin' ? '管理员' : '普通游客' }}</div>
-                        <div class="uc-meta">邮箱：{{ userInfo.email || '未设置' }} ? 性别：{{ userInfo.gender || '保密' }}</div>
+                        <div class="uc-meta">{{ userInfo.phone || '未绑定手机号' }} · {{ userInfo.role === 'admin' ? '管理员' : '普通游客' }}</div>
+                        <div class="uc-meta">邮箱：{{ userInfo.email || '未设置' }} · 性别：{{ userInfo.gender || '保密' }}</div>
                     </div>
                     <van-icon name="arrow" class="uc-arrow" />
                 </div>
@@ -32,6 +32,12 @@
                         </div>
                     </div>
                 </div>
+                <div class="uc-section-title">支付宝沙箱公共测试账号</div>
+                <div class="uc-card uc-sandbox">
+                    <div class="uc-sandbox-row"><span>商户余额</span><span>￥{{ fmt(sandbox.merchant.balance) }}</span></div>
+                    <div class="uc-sandbox-row"><span>买家余额</span><span>￥{{ fmt(sandbox.buyer.balance) }}</span></div>
+                    <div class="uc-sandbox-tip">此账号为支付宝沙箱公共测试账号，所有游客共用，仅供演示</div>
+                </div>
             </div>
         </div>
         <TabBar />
@@ -41,6 +47,7 @@
 <script>
     import { useUserStore } from '@/store/modules/user'
     import { deleteAccount, walletRecharge, walletWithdraw } from '@/api/user'
+    import { getSandboxAccounts } from '@/api/pay'
     import TabBar from '@/components/web/TabBar.vue'
     import { showConfirmDialog, showToast } from 'vant'
 
@@ -48,13 +55,19 @@
         name: 'UserCenter',
         components: { TabBar },
         data() {
-            return { refreshTimer: null, amount: 100 }
+            return { refreshTimer: null, amount: 100, sandbox: { merchant: {}, buyer: {} } }
         },
         computed: {
             userInfo() { return useUserStore().userInfo || {} }
         },
         methods: {
             fmt(v) { return Number(v || 0).toFixed(2) },
+            async loadSandbox() {
+                try {
+                    const res = await getSandboxAccounts()
+                    this.sandbox = res.data || { merchant: {}, buyer: {} }
+                } catch (e) {}
+            },
             goProfile() {
                 const token = localStorage.getItem('token')
                 if (!token) { showToast('请先登录'); this.$router.replace('/login'); return }
@@ -100,6 +113,7 @@
         mounted() {
             const token = localStorage.getItem('token')
             if (!token) { this.$router.replace('/login'); return }
+            this.loadSandbox()
             this.startAutoRefresh()
             document.addEventListener('visibilitychange', this.onVisibilityChange)
         },
@@ -123,6 +137,11 @@
     .uc-name { font-size: 18px; font-weight: 700; color: #eef3ff; margin-bottom: 4px; }
     .uc-meta { font-size: 12.5px; color: #8fa0c2; line-height: 1.6; }
     .uc-arrow { color: #5f7399; font-size: 16px; }
+    .uc-section-title { margin: 0 4px 10px; font-size: 14px; font-weight: 600; color: #8fa0c2; letter-spacing: 1px; }
+    .uc-sandbox { padding: 14px 16px; }
+    .uc-sandbox-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; color: #b8c6e0; border-bottom: 1px solid rgba(120,170,255,0.08); }
+    .uc-sandbox-row span:last-child { color: #4da3ff; font-weight: 600; }
+    .uc-sandbox-tip { margin-top: 10px; font-size: 12px; color: #5f7399; line-height: 1.6; }
     .uc-actions { margin-top: 16px; display: flex; flex-direction: column; gap: 12px; }
     .uc-wallet { padding: 18px 16px; }
     .uc-wallet-balance { font-size: 30px; font-weight: 800; color: #4da3ff; text-shadow: 0 0 20px rgba(77,163,255,0.35); }

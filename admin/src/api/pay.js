@@ -5,6 +5,11 @@ export function getSandboxMerchant() {
     return request.get('/pay/sandbox/merchant')
 }
 
+/** query both sandbox accounts (merchant + buyer) */
+export function getSandboxAccounts() {
+    return request.get('/pay/sandbox/accounts')
+}
+
 /** recharge merchant sandbox balance */
 export function sandboxRecharge(data) {
     return request.post('/pay/sandbox/recharge', data)

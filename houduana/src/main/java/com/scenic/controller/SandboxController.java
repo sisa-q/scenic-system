@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /** Alipay sandbox account mirror (local mock): merchant in admin personal center, buyer in tourist personal center */
@@ -39,6 +40,19 @@ public class SandboxController {
     public Result buyer() {
         try {
             return Result.success(sandboxAccountService == null ? null : sandboxAccountService.getBuyerAccount());
+        } catch (Exception e) {
+            return Result.error("查询失败：" + e.getMessage());
+        }
+    }
+
+    /** Query both sandbox accounts (merchant + buyer, any logged-in user) */
+    @GetMapping("/accounts")
+    public Result accounts() {
+        try {
+            LinkedHashMap<String, Object> data = new LinkedHashMap<>();
+            data.put("merchant", sandboxAccountService == null ? null : sandboxAccountService.getMerchantAccount());
+            data.put("buyer", sandboxAccountService == null ? null : sandboxAccountService.getBuyerAccount());
+            return Result.success(data);
         } catch (Exception e) {
             return Result.error("查询失败：" + e.getMessage());
         }
