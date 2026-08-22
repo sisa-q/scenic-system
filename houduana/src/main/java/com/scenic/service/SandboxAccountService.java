@@ -78,15 +78,14 @@ public class SandboxAccountService {
         log.info("[Sandbox] 支付联动 orderNo={}, amount={}", orderNo, amt);
     }
 
-    /** 退款成功联动：商户余额减少、买家余额增加（仅对曾走模拟支付镜像的订单生效） */
+    /** 退款成功联动：商户余额减少、买家余额增加（对走系统支付的订单生效：模拟或真实支付宝） */
     @Transactional
     public synchronized void onRefund(String orderNo, BigDecimal amount) {
         if (orderNo == null || amount == null || accountRepo == null) return;
         ensureAccounts();
-        boolean paidByMock = payTransactionRepository != null
-                && payTransactionRepository.findByOrderNo(orderNo)
-                .map(tx -> "mock".equalsIgnoreCase(tx.getChannel())).orElse(false);
-        if (!paidByMock) return;
+        boolean paidViaSystem = payTransactionRepository != null
+                && payTransactionRepository.findByOrderNo(orderNo).isPresent();
+        if (!paidViaSystem) return;
         BigDecimal amt = amount.setScale(2, RoundingMode.HALF_UP);
         change(ROLE_MERCHANT, DIR_OUT, amt);
         change(ROLE_BUYER, DIR_IN, amt);

@@ -188,12 +188,6 @@ public class PayServiceImpl implements PayService {
             throw new RuntimeException("模拟支付确认失败");
         }
         // 模拟支付联动：同步沙箱账户镜像（买家减、商户加）——模拟模式始终更新，不受 channel 影响
-        if (firstConfirm && sandboxAccountService != null) {
-            try {
-                sandboxAccountService.onPaid(order.getOrderNo(), order.getTotalAmount());
-            } catch (Exception ignored) {
-            }
-        }
         PayResult r = new PayResult();
         r.setType("mock");
         r.setOrderId(order.getId());
@@ -267,6 +261,13 @@ public class PayServiceImpl implements PayService {
             tx.setNotifyTime(new Date());
             tx.setRawData(outTradeNo);
             try { payTransactionRepository.save(tx); } catch (Exception ignored) { }
+        }
+        // local sandbox mirror: paid => buyer -, merchant + (mock & real alipay unified)
+        if (sandboxAccountService != null) {
+            try {
+                sandboxAccountService.onPaid(order.getOrderNo(), order.getTotalAmount());
+            } catch (Exception ignored) {
+            }
         }
         return SUCCESS;
     }
