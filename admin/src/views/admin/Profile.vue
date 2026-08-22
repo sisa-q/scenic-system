@@ -2,7 +2,7 @@
     <div class="admin-page">
         <div class="page-header">
             <div class="page-header-left">
-                <div class="page-title">?人中心</div>
+                <div class="page-title">个人中心</div>
                 <div class="page-subtitle">维护账号信息与余额钱包</div>
             </div>
         </div>
@@ -16,7 +16,7 @@
                 <el-form-item label="昵称">
                     <el-input v-model="form.nickname" style="width:320px;" />
                 </el-form-item>
-                <el-form-item label="?机号">
+                <el-form-item label="手机号">
                     <el-input v-model="form.phone" style="width:320px;" />
                 </el-form-item>
                 <el-form-item label="邮箱">
@@ -49,7 +49,7 @@
 
                 <el-form-item>
                     <el-button type="primary" @click="handleSave">保存修改</el-button>
-                    <el-button style="margin-left:12px;" @click="handleLogout">?出登录</el-button>
+                    <el-button style="margin-left:12px;" @click="handleLogout">退出登录</el-button>
                 </el-form-item>
             </el-form>
         </el-card>
@@ -114,9 +114,9 @@
             },
             handleLogout() {
                 ElMessageBox.confirm('确定退出登录吗？', '提示', { type: 'warning' })
-                    .then(() => {
+                    .then(async () => {
                         const store = useUserStore()
-                        store.logout()
+                        await store.logout()
                         window.location.href = '/login'
                     })
                     .catch(() => {})

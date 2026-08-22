@@ -78,7 +78,7 @@
                 try {
                     await showConfirmDialog({ title: '提示', message: '确认退出登录？' })
                     const store = useUserStore()
-                    store.logout()
+                    await store.logout()
                     showToast('已退出登录')
                     // ✅ 跳转到统一登录页
                     this.$router.replace('/login')

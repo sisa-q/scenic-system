@@ -14,8 +14,8 @@
         <van-form @submit="onSubmit">
             <van-cell-group inset title="基本信息">
                 <van-field v-model="form.avatar" label="头像" placeholder="头像图片 URL" />
-                <van-field v-model="form.nickname" name="nickname" label="?称" placeholder="请输入昵称" :rules="[{ required: true, message: '请输入昵称' }]" />
-                <van-field v-model="form.phone" name="phone" label="?机号" placeholder="请输入手机号" type="tel" :rules="[{ required: true, message: '请输入手机号' }]" />
+                <van-field v-model="form.nickname" name="nickname" label="昵称" placeholder="请输入昵称" :rules="[{ required: true, message: '请输入昵称' }]" />
+                <van-field v-model="form.phone" name="phone" label="手机号" placeholder="请输入手机号" type="tel" :rules="[{ required: true, message: '请输入手机号' }]" />
                 <van-field v-model="form.email" label="邮箱" placeholder="选填" />
                 <van-field name="gender" label="性别">
                     <template #input>
@@ -168,7 +168,7 @@
                     this.form.confirmPassword = ''
                 } catch (e) {
                     console.error('save profile failed', e)
-                    showToast(e.msg || e.message || '?改失败')
+                    showToast(e.msg || e.message || '修改失败')
                 } finally {
                     this.submitting = false
                 }
