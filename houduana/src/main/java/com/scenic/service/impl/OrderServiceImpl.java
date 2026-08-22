@@ -12,6 +12,7 @@ import com.scenic.repository.TicketPolicyRepository;
 import com.scenic.repository.ScenicSpotRepository;
 import com.scenic.service.OrderService;
 import com.scenic.service.PayService;
+import com.scenic.service.UserService;
 import com.scenic.service.SandboxAccountService;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.beans.factory.annotation.Value;
@@ -59,6 +60,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired(required = false)
     private SandboxAccountService sandboxAccountService;
+
+    @Autowired(required = false)
+    private UserService userService;
 
     @Autowired(required = false)
     private StringRedisTemplate redisTemplate;
@@ -344,6 +348,17 @@ public class OrderServiceImpl implements OrderService {
         orderRepository.save(order);
 
         // 模拟退款联动：同步沙箱账户镜像（商户减、买家加；仅对走镜像支付的订单生效）
+        // 模拟退款退回买家余额
+        boolean paidByMock = payTransactionRepository != null
+                && payTransactionRepository.findByOrderNo(order.getOrderNo())
+                .map(tx -> "mock".equalsIgnoreCase(tx.getChannel())).orElse(false);
+        if (paidByMock && userService != null && order.getUserId() != null) {
+            try {
+                userService.addBalance(order.getUserId(), order.getTotalAmount());
+            } catch (Exception ignored) {
+            }
+        }
+
         if (sandboxAccountService != null) {
             try {
                 sandboxAccountService.onRefund(order.getOrderNo(), order.getTotalAmount());

@@ -29,6 +29,20 @@ export function updateProfile(data) {
 }
 
 /**
+ * 钱包充值
+ */
+export function walletRecharge(data) {
+    return request.post('/user/wallet/recharge', data)
+}
+
+/**
+ * 钱包取现
+ */
+export function walletWithdraw(data) {
+    return request.post('/user/wallet/withdraw', data)
+}
+
+/**
  * 注销账号
  */
 export function deleteAccount() {

@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -155,6 +156,7 @@ public class UserController {
             data.put("id", registered.getId());
             data.put("username", registered.getUsername());
             data.put("nickname", registered.getNickname());
+            data.put("balance", registered.getBalance());
             data.put("role", registered.getRole());
 
             return Result.success(data);
@@ -194,14 +196,51 @@ public class UserController {
                 return Result.error("用户不存在");
             }
 
+            // ===== 基本信息（全面修改） =====
             String nickname = params.get("nickname");
             String phone = params.get("phone");
+            String avatar = params.get("avatar");
+            String email = params.get("email");
+            String gender = params.get("gender");
+            String birthday = params.get("birthday");
+            String signature = params.get("signature");
 
             if (nickname != null && !nickname.trim().isEmpty()) {
                 user.setNickname(nickname.trim());
             }
             if (phone != null && !phone.trim().isEmpty()) {
                 user.setPhone(phone.trim());
+            }
+            if (avatar != null) {
+                user.setAvatar(avatar.trim());
+            }
+            if (email != null) {
+                user.setEmail(email.trim());
+            }
+            if (gender != null) {
+                user.setGender(gender.trim());
+            }
+            if (birthday != null) {
+                user.setBirthday(birthday.trim());
+            }
+            if (signature != null) {
+                user.setSignature(signature.trim());
+            }
+
+            // ===== 修改密码：提供新密码时须校验原密码 =====
+            String oldPassword = params.get("oldPassword");
+            String newPassword = params.get("newPassword");
+            if (newPassword != null && !newPassword.trim().isEmpty()) {
+                if (oldPassword == null || oldPassword.trim().isEmpty()) {
+                    return Result.error("请填写原密码");
+                }
+                if (!userService.checkPassword(userId, oldPassword)) {
+                    return Result.error("原密码不正确");
+                }
+                if (newPassword.trim().length() < 6) {
+                    return Result.error("新密码至少 6 位");
+                }
+                user.setPassword(newPassword.trim());
             }
 
             User updated = userService.update(user);
@@ -211,6 +250,52 @@ public class UserController {
             e.printStackTrace();
             return Result.error("更新失败：" + e.getMessage());
         }
+    }
+
+    // ==================== 钱包：充值 / 取现（操作自己的余额） ====================
+    @PostMapping("/wallet/recharge")
+    public Result recharge(@RequestBody Map<String, Object> body,
+                           @RequestHeader("Authorization") String authHeader) {
+        try {
+            Long userId = Long.parseLong(jwtUtil.getUserIdFromToken(authHeader.substring(7)));
+            BigDecimal amount = parseAmount(body);
+            userService.addBalance(userId, amount);
+            User user = userService.findById(userId);
+            user.setPassword(null);
+            return Result.success(user);
+        } catch (Exception e) {
+            return Result.error("充值失败：" + e.getMessage());
+        }
+    }
+
+    @PostMapping("/wallet/withdraw")
+    public Result withdraw(@RequestBody Map<String, Object> body,
+                           @RequestHeader("Authorization") String authHeader) {
+        try {
+            Long userId = Long.parseLong(jwtUtil.getUserIdFromToken(authHeader.substring(7)));
+            BigDecimal amount = parseAmount(body);
+            boolean ok = userService.deductBalance(userId, amount);
+            if (!ok) {
+                return Result.error("余额不足");
+            }
+            User user = userService.findById(userId);
+            user.setPassword(null);
+            return Result.success(user);
+        } catch (Exception e) {
+            return Result.error("取现失败：" + e.getMessage());
+        }
+    }
+
+    private BigDecimal parseAmount(Map<String, Object> body) {
+        Object amountObj = body == null ? null : body.get("amount");
+        if (amountObj == null) {
+            throw new RuntimeException("金额不能为空");
+        }
+        BigDecimal amount = new BigDecimal(String.valueOf(amountObj));
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new RuntimeException("金额必须大于 0");
+        }
+        return amount;
     }
 
     // ==================== 注销账号（物理删除） ====================

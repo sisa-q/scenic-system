@@ -5,8 +5,10 @@ import com.scenic.repository.UserRepository;
 import com.scenic.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 
 @Service
@@ -77,6 +79,36 @@ public class UserServiceImpl implements UserService {
             user.setPassword(passwordEncoder.encode(pwd));
         }
         return userRepository.save(user);
+    }
+
+    @Override
+    public boolean checkPassword(Long userId, String rawPassword) {
+        User user = userRepository.findById(userId).orElse(null);
+        return user != null && rawPassword != null && passwordEncoder.matches(rawPassword, user.getPassword());
+    }
+
+    @Override
+    @Transactional
+    public boolean deductBalance(Long userId, BigDecimal amount) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) return false;
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null) return false;
+        BigDecimal bal = user.getBalance() == null ? BigDecimal.ZERO : user.getBalance();
+        if (bal.compareTo(amount) < 0) return false;
+        user.setBalance(bal.subtract(amount));
+        userRepository.save(user);
+        return true;
+    }
+
+    @Override
+    @Transactional
+    public void addBalance(Long userId, BigDecimal amount) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) return;
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null) return;
+        BigDecimal bal = user.getBalance() == null ? BigDecimal.ZERO : user.getBalance();
+        user.setBalance(bal.add(amount));
+        userRepository.save(user);
     }
 
     @Override

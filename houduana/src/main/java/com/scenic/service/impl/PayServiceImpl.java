@@ -9,11 +9,13 @@ import com.scenic.repository.OrderRepository;
 import com.scenic.repository.PayTransactionRepository;
 import com.scenic.service.OrderService;
 import com.scenic.service.SandboxAccountService;
+import com.scenic.service.UserService;
 import com.scenic.service.PayService;
 import com.scenic.util.AlipaySigner;
 import com.scenic.vo.PayResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -44,6 +46,9 @@ public class PayServiceImpl implements PayService {
 
     @Autowired(required = false)
     private SandboxAccountService sandboxAccountService;
+
+    @Autowired(required = false)
+    private UserService userService;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -159,6 +164,7 @@ public class PayServiceImpl implements PayService {
     }
 
     @Override
+    @Transactional
     public PayResult mockConfirm(Long orderId, Long operatorId, String role) {
         Order order = orderRepository.findById(orderId).orElseThrow(() -> new RuntimeException("订单不存在"));
         if (!"admin".equals(role) && (operatorId == null || order.getUserId() == null || !operatorId.equals(order.getUserId()))) {
@@ -170,6 +176,13 @@ public class PayServiceImpl implements PayService {
         // 首次确认才联动沙箱余额：重复确认（幂等）不再重复加减
         boolean firstConfirm = payTransactionRepository == null
                 || !payTransactionRepository.findByTransactionId(tradeNo).isPresent();
+        // 模拟支付扣买家余额
+        if (firstConfirm && userService != null && order.getUserId() != null) {
+            boolean ok = userService.deductBalance(order.getUserId(), order.getTotalAmount());
+            if (!ok) {
+                throw new RuntimeException("余额不足");
+            }
+        }
         String result = confirmPaidOrder(order.getOrderNo(), tradeNo, totalAmount, "mock");
         if (!SUCCESS.equals(result)) {
             throw new RuntimeException("模拟支付确认失败");
