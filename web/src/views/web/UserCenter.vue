@@ -21,12 +21,8 @@
                 </div>
             </div>
             <div class="uc-right">
-                <div class="uc-section-title">我的余额</div>
                 <div class="uc-card uc-wallet">
-                    <div class="uc-wallet-top">
-                        <div class="uc-wallet-label">当前余额</div>
-                        <div class="uc-wallet-balance">￥{{ fmt(userInfo.balance) }}</div>
-                    </div>
+                    <div class="uc-wallet-balance">￥{{ fmt(userInfo.balance) }}</div>
                     <div class="uc-wallet-tip">模拟支付从余额扣款，退款自动退回</div>
                     <div class="uc-wallet-ops">
                         <van-field v-model="amount" type="number" label="金额" placeholder="请输入金额" class="uc-amount" />
@@ -128,10 +124,7 @@
     .uc-meta { font-size: 12.5px; color: #8fa0c2; line-height: 1.6; }
     .uc-arrow { color: #5f7399; font-size: 16px; }
     .uc-actions { margin-top: 16px; display: flex; flex-direction: column; gap: 12px; }
-    .uc-section-title { margin: 0 4px 10px; font-size: 14px; font-weight: 600; color: #8fa0c2; letter-spacing: 1px; }
     .uc-wallet { padding: 18px 16px; }
-    .uc-wallet-top { display: flex; align-items: baseline; justify-content: space-between; }
-    .uc-wallet-label { font-size: 13px; color: #8fa0c2; }
     .uc-wallet-balance { font-size: 30px; font-weight: 800; color: #4da3ff; text-shadow: 0 0 20px rgba(77,163,255,0.35); }
     .uc-wallet-tip { margin-top: 6px; font-size: 12px; color: #5f7399; }
     .uc-wallet-ops { margin-top: 14px; }
