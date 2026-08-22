@@ -55,10 +55,11 @@
 <style scoped>
     .order-item {
         flex: 1;
-        background: #fff;
+        background: rgba(16,28,56,0.72);
+        border: 1px solid rgba(120,170,255,0.16);
         border-radius: 12px;
         padding: 14px 16px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
         cursor: pointer;
         min-width: 0; /* 防止flex溢出 */
     }
@@ -66,9 +67,9 @@
         display: flex;
         justify-content: space-between;
         font-size: 13px;
-        color: #969799;
+        color: #8fa0c2;
         padding-bottom: 8px;
-        border-bottom: 1px solid #f0f0f0;
+        border-bottom: 1px solid rgba(120,170,255,0.12);
         flex-wrap: wrap;
     }
     .order-no {
@@ -98,6 +99,7 @@
         font-size: 15px;
     }
     .order-name {
+        color: #eef3ff;
         flex: 1;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -113,7 +115,7 @@
         display: flex;
         justify-content: space-between;
         font-size: 12px;
-        color: #c8c9cc;
+        color: #5f7399;
     }
     .order-time {
         flex: 1;

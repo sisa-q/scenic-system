@@ -310,4 +310,8 @@
         align-self: center;
         accent-color: #1989fa;
     }
+    .order-list.page-container { max-width: none; }
+    @media (min-width: 768px) {
+        .list { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 12px; }
+    }
 </style>
