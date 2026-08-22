@@ -33,15 +33,15 @@
                     </el-form-item>
                 </el-form>
             </el-card>
+            <div class="profile-side">
             <el-card class="profile-wallet">
                 <template #header>我的余额</template>
                 <div class="wallet-label">当前余额</div>
                 <div class="wallet-balance">￥{{ fmt(userInfo.balance) }}</div>
                 <div class="wallet-tip">模拟支付从余额扣款，退款自动退回</div>
             </el-card>
-        </div>
 
-        <el-card class="sandbox-card">
+            <el-card class="sandbox-card">
             <template #header>商户沙箱账号</template>
             <div class="sandbox-grid">
                 <div class="sandbox-col">
@@ -53,7 +53,9 @@
                 </div>
             </div>
             <div class="sandbox-tip">商户测试账号：仅供演示，余额随支付/退款/充值联动。</div>
-        </el-card>
+            </el-card>
+        </div>
+        </div>
     </div>
 </template>
 
@@ -128,7 +130,7 @@
     .profile-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
     .profile-main { width: 100%; }
     .profile-main :deep(.el-form-item__label) { color: #b8c6e0; }
-    .profile-wallet { position: sticky; top: 16px; }
+    .profile-side { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 16px; }
     .wallet-label { font-size: 13px; color: #8fa0c2; }
     .wallet-balance { font-size: 30px; font-weight: 800; color: #4da3ff; margin: 8px 0; text-shadow: 0 0 20px rgba(77,163,255,0.35); }
     .wallet-tip { font-size: 12px; color: #5f7399; margin-bottom: 14px; }
@@ -136,9 +138,9 @@
     .wallet-btns { display: flex; gap: 10px; }
     @media (max-width: 1100px) {
         .profile-grid { grid-template-columns: 1fr; }
-        .profile-wallet { position: static; }
+        .profile-side { position: static; }
     }
-    .sandbox-card { margin-top: 16px; }
+
     .sandbox-grid { display: grid; grid-template-columns: 1fr; gap: 24px; }
     .sandbox-col-title { font-size: 15px; font-weight: 700; color: #e8eefc; margin-bottom: 10px; }
     .sandbox-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; color: #b8c6e0; border-bottom: 1px solid rgba(120,170,255,0.08); }
