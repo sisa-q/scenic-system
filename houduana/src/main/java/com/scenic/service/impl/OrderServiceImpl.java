@@ -451,27 +451,6 @@ public class OrderServiceImpl implements OrderService {
         return deletableIds.size();
     }
 
-    @Override
-    @Transactional
-    public int hideOrders(List<Long> ids, Long userId) {
-        if (ids == null || ids.isEmpty()) return 0;
-        List<Order> orders = orderRepository.findAllById(ids);
-        List<Long> validIds = orders.stream()
-                .filter(o -> userId != null && userId.equals(o.getUserId()))
-                .filter(o -> o.getStatus() == 0 || o.getStatus() == 3)
-                .map(Order::getId)
-                .collect(Collectors.toList());
-        if (validIds.isEmpty()) {
-            throw new RuntimeException("没有可隐藏的订单");
-        }
-        List<Order> toUpdate = orderRepository.findAllById(validIds);
-        for (Order order : toUpdate) {
-            order.setUserVisible(0);
-        }
-        orderRepository.saveAll(toUpdate);
-        return validIds.size();
-    }
-
     // ====== 待支付订单支付限时 ======
     private boolean isPendingExpired(Order order) {
         if (order == null || order.getStatus() == null || order.getStatus() != 0) return false;

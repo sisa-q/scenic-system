@@ -45,7 +45,3 @@ export function batchDeleteOrders(ids) {
     return request.delete('/order/batch-delete', { data: { ids } })
 }
 
-// ✅ 新增：游客隐藏订单（批量）
-export function hideOrders(ids) {
-    return request.put('/order/hide', { ids })
-}

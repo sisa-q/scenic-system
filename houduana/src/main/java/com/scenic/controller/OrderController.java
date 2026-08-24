@@ -24,7 +24,7 @@ public class OrderController {
     @Autowired
     private JwtUtil jwtUtil;
 
-    // ==================== ????????????? ====================
+    // ==================== 一键清空订单数据（管理员） ====================
     @PostMapping("/clear")
     public Result clear(@RequestHeader("Authorization") String authHeader) {
         try {
@@ -156,24 +156,6 @@ public class OrderController {
         } catch (Exception e) {
             e.printStackTrace();
             return Result.error("删除失败：" + e.getMessage());
-        }
-    }
-
-    @PutMapping("/hide")
-    public Result hideOrders(@RequestBody Map<String, List<Long>> params,
-                             @RequestHeader("Authorization") String authHeader) {
-        List<Long> ids = params.get("ids");
-        if (ids == null || ids.isEmpty()) {
-            return Result.error("请选择要隐藏的订单");
-        }
-        try {
-            String token = authHeader.substring(7);
-            Long userId = Long.parseLong(jwtUtil.getUserIdFromToken(token));
-            int count = orderService.hideOrders(ids, userId);
-            return Result.success("已隐藏 " + count + " 条订单");
-        } catch (Exception e) {
-            e.printStackTrace();
-            return Result.error("隐藏失败：" + e.getMessage());
         }
     }
 
