@@ -5,7 +5,14 @@ import com.scenic.entity.TimeSlot;
 import com.scenic.entity.TicketPolicy;
 import com.scenic.entity.ScenicSpot;
 import com.scenic.entity.PayTransaction;
+import com.scenic.entity.Evaluation;
+import com.scenic.entity.VerifyRecord;
+import com.scenic.entity.User;
 import com.scenic.repository.PayTransactionRepository;
+import com.scenic.repository.EvaluationRepository;
+import com.scenic.repository.VerifyRecordRepository;
+import com.scenic.repository.FlowStatRepository;
+import com.scenic.repository.UserRepository;
 import com.scenic.repository.OrderRepository;
 import com.scenic.repository.TimeSlotRepository;
 import com.scenic.repository.TicketPolicyRepository;
@@ -53,6 +60,18 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired(required = false)
     private PayTransactionRepository payTransactionRepository;
+
+    @Autowired(required = false)
+    private EvaluationRepository evaluationRepository;
+
+    @Autowired(required = false)
+    private VerifyRecordRepository verifyRecordRepository;
+
+    @Autowired(required = false)
+    private FlowStatRepository flowStatRepository;
+
+    @Autowired(required = false)
+    private UserRepository userRepository;
 
     @Autowired(required = false)
     @Lazy
@@ -558,4 +577,35 @@ public class OrderServiceImpl implements OrderService {
             order.setDisabled(disabled);
         }
     }
+    @Override
+    @Transactional
+    public void clearOrderData() {
+        // clear evaluations (linked to orders)
+        if (evaluationRepository != null) evaluationRepository.deleteAll();
+        // clear verify records (linked to orders)
+        if (verifyRecordRepository != null) verifyRecordRepository.deleteAll();
+        // clear pay transactions (linked to orders)
+        if (payTransactionRepository != null) payTransactionRepository.deleteAll();
+        // clear orders
+        orderRepository.deleteAll();
+        // reset time-slot booked counts (release stock)
+        for (TimeSlot slot : timeSlotRepository.findAll()) {
+            slot.setBooked(0);
+            timeSlotRepository.save(slot);
+        }
+        // clear flow statistics
+        if (flowStatRepository != null) flowStatRepository.deleteAll();
+        // reset user wallet balances to initial value
+        if (userRepository != null) {
+            for (User user : userRepository.findAll()) {
+                user.setBalance(new BigDecimal("1000000.00"));
+                userRepository.save(user);
+            }
+        }
+        // reset sandbox mirror balances
+        if (sandboxAccountService != null) {
+            sandboxAccountService.resetBalances();
+        }
+    }
+
 }

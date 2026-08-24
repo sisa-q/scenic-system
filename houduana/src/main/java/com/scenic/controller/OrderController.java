@@ -24,6 +24,17 @@ public class OrderController {
     @Autowired
     private JwtUtil jwtUtil;
 
+    // ==================== ????????????? ====================
+    @PostMapping("/clear")
+    public Result clear(@RequestHeader("Authorization") String authHeader) {
+        try {
+            orderService.clearOrderData();
+            return Result.success("订单数据已清空");
+        } catch (Exception e) {
+            return Result.error("清空失败：" + e.getMessage());
+        }
+    }
+
     @GetMapping("/list")
     public Result list(@RequestParam(required = false) Integer status,
                        @RequestParam(required = false) String key,

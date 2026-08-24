@@ -25,6 +25,7 @@
             <el-button @click="fetchList">搜索</el-button>
             <el-button @click="resetSearch">重置</el-button>
             <el-button @click="fetchList">刷新</el-button>
+            <el-button type="danger" plain @click="handleClearAll">清空订单数据</el-button>
             <el-button
                     v-if="selectedIds.length > 0"
                     type="danger"
@@ -102,7 +103,7 @@
 </template>
 
 <script>
-    import { getOrderList, refundOrder, batchDeleteOrders } from '@/api/order'
+    import { getOrderList, refundOrder, batchDeleteOrders, clearOrderData } from '@/api/order'
     import { ElMessage, ElMessageBox } from 'element-plus'
 
     export default {
@@ -145,6 +146,16 @@
             document.removeEventListener('visibilitychange', this.onVisibilityChange)
         },
         methods: {
+            handleClearAll() {
+                ElMessageBox.confirm('确认清空所有订单数据？将同时清空支付流水、核销记录、评价，并重置时段库存、客流统计、用户余额与沙箱余额。', '⚠️ 危险操作', { type: 'warning', confirmButtonText: '确认清空', cancelButtonText: '取消' })
+                    .then(async () => {
+                        await ElMessageBox.confirm('再次确认：此操作不可恢复！', '⚠️ 再次确认', { type: 'warning', confirmButtonText: '确定清空' })
+                        await clearOrderData()
+                        ElMessage.success('订单数据已清空')
+                        this.fetchList()
+                    })
+                    .catch(() => {})
+            },
             // 状态文本（含停用类型）
             statusLabel(row) {
                 if (row.status === 0 && row.disabled) return '待支付已停用'

@@ -34,6 +34,7 @@ public class JwtInterceptor implements HandlerInterceptor {
             "/api/notice/add", "/api/notice/update", "/api/notice/delete",
             // 批量删除（取消退款申请允许订单本人操作；单笔退款仅管理员，在服务层校验）
             "/api/order/batch-delete",
+            "/api/order/clear",
             // 评价管理（列表与删除仅管理员）
             "/api/evaluation/list", "/api/evaluation/delete",
             // 核销管理
