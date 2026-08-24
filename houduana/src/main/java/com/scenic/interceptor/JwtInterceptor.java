@@ -29,7 +29,7 @@ public class JwtInterceptor implements HandlerInterceptor {
             // 票种维护
             "/api/ticket/add", "/api/ticket/update", "/api/ticket/delete",
             // 时段维护
-            "/api/ticket/slot/add", "/api/ticket/slot/update", "/api/ticket/slot/delete",
+            "/api/ticket/slot/add", "/api/ticket/slot/update", "/api/ticket/slot/delete", "/api/ticket/slot/batch-delete",
             // 公告发布
             "/api/notice/add", "/api/notice/update", "/api/notice/delete",
             // 批量删除（取消退款申请允许订单本人操作；单笔退款仅管理员，在服务层校验）

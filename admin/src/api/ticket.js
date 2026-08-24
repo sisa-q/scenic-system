@@ -82,6 +82,13 @@ export function deleteSlot(id) {
     return request.delete(`/ticket/slot/delete/${id}`)
 }
 
+/**
+ * 批量删除时段
+ */
+export function batchDeleteSlots(ids) {
+    return request.post('/ticket/slot/batch-delete', { ids })
+}
+
 // ============================================================
 //  景点相关（游客端使用）
 // ============================================================

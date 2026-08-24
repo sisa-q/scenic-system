@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -234,6 +235,24 @@ public class TicketController {
         } catch (Exception e) {
             e.printStackTrace();
             return Result.error("更新时段失败：" + e.getMessage());
+        }
+    }
+
+    @PostMapping("/slot/batch-delete")
+    public Result batchDeleteSlots(@RequestBody Map<String, Object> params) {
+        try {
+            List<Long> ids = new ArrayList<>();
+            Object idsObj = params == null ? null : params.get("ids");
+            if (idsObj instanceof List) {
+                for (Object o : (List<?>) idsObj) {
+                    if (o != null) ids.add(Long.valueOf(o.toString()));
+                }
+            }
+            timeSlotService.deleteBatch(ids);
+            return Result.success("批量删除成功");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("批量删除失败：" + e.getMessage());
         }
     }
 

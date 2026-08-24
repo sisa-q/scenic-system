@@ -8,6 +8,7 @@ import com.scenic.service.TimeSlotService;
 import com.scenic.util.RedisCache;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -104,6 +105,15 @@ public class TimeSlotServiceImpl implements TimeSlotService {
         TimeSlot saved = timeSlotRepository.save(slot);
         evictSlotCache(saved);
         return saved;
+    }
+
+    @Override
+    @Transactional
+    public void deleteBatch(java.util.List<Long> ids) {
+        if (ids == null || ids.isEmpty()) return;
+        for (Long id : ids) {
+            delete(id);
+        }
     }
 
     @Override

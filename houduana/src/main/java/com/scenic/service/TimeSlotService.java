@@ -17,4 +17,5 @@ public interface TimeSlotService {
     TimeSlot update(TimeSlot slot);
 
     void delete(Long id);
+    void deleteBatch(java.util.List<Long> ids);
 }

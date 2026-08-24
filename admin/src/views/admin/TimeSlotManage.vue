@@ -19,9 +19,11 @@
                 <el-option label="关闭" :value="0" />
             </el-select>
             <span style="color:#8fa0c2;font-size:12px;">共 {{ filteredList.length }} 条</span>
+            <el-button v-if="selectedIds.length > 0" type="danger" @click="handleBatchDelete">删除选中 ({{ selectedIds.length }})</el-button>
         </div>
         <div class="admin-list-card">
-        <el-table :data="filteredList" style="margin-top: 0" border>
+        <el-table :data="filteredList" style="margin-top: 0" border @selection-change="handleSelectionChange">
+            <el-table-column type="selection" width="50" />
             <el-table-column prop="id" label="ID" width="80" />
             <el-table-column prop="policyName" label="所属票种" />
             <el-table-column prop="startTime" label="开始时间" width="180" />
@@ -111,7 +113,7 @@
 </template>
 
 <script>
-    import { getSlots, saveSlot, updateSlot, deleteSlot, getTicketList } from '@/api/ticket'
+    import { getSlots, saveSlot, updateSlot, deleteSlot, batchDeleteSlots, getTicketList } from '@/api/ticket'
     import { ElMessage, ElMessageBox } from 'element-plus'
 
     export default {
@@ -124,6 +126,7 @@
                 policyOptions: [],
                 dialogVisible: false,
                 saving: false,
+                selectedIds: [],
                 form: this.emptyForm()
             }
         },
@@ -289,6 +292,20 @@
                 } finally {
                     this.saving = false
                 }
+            },
+            handleSelectionChange(rows) {
+                this.selectedIds = rows.map(r => r.id)
+            },
+            handleBatchDelete() {
+                if (!this.selectedIds.length) return
+                ElMessageBox.confirm(`确认删除选中的 ${this.selectedIds.length} 个时段？`, '提示', { type: 'warning' })
+                    .then(async () => {
+                        await batchDeleteSlots(this.selectedIds)
+                        ElMessage.success('删除成功')
+                        this.selectedIds = []
+                        await this.fetchList()
+                    })
+                    .catch(() => {})
             },
             handleDelete(id) {
                 ElMessageBox.confirm('确认删除该时段？', '提示', { type: 'warning' })
