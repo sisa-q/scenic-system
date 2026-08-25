@@ -7,7 +7,7 @@
 
         <div class="agent-messages" ref="msgBox">
             <div class="msg-row ai">
-                <div class="msg-bubble ai-bubble">你好，我是智慧景区 AI 助手，可以问我故宫景点、门票、分时预约、天气、退款等问题。</div>
+                <div class="msg-bubble ai-bubble">你好，我是智慧景区 AI 助手，可以问我故宫景点、门票、分时预约、天气等问题，也能帮你查订单、下单。</div>
             </div>
             <div v-for="(m, i) in messages" :key="i" class="msg-row" :class="m.role">
                 <div class="msg-bubble" :class="m.role + '-bubble'">{{ m.content }}</div>
@@ -15,41 +15,81 @@
             <div v-if="loading" class="msg-row ai">
                 <div class="msg-bubble ai-bubble typing">思考中...</div>
             </div>
+
+            <div v-if="pendingConfirm" class="confirm-card">
+                <div class="confirm-tip">该操作需要你的确认：</div>
+                <div class="confirm-summary">{{ pendingConfirm.summary }}</div>
+                <div class="confirm-btns">
+                    <van-button size="small" type="primary" :loading="confirming" @click="doConfirm">确认</van-button>
+                    <van-button size="small" plain @click="cancelConfirm">取消</van-button>
+                </div>
+            </div>
         </div>
 
         <div class="agent-input">
-            <van-field v-model="question" placeholder="请输入你的问题" :disabled="loading" @keyup.enter="send" />
+            <van-field v-model="question" placeholder="请输入你的问题" :disabled="loading || !!pendingConfirm" @keyup.enter="send" />
             <van-button type="primary" size="small" :loading="loading" @click="send">发送</van-button>
         </div>
     </div>
 </template>
 
 <script>
-    import { agentChat } from '@/api/agent'
+    import { agentChat, agentConfirm } from '@/api/agent'
     import { showToast } from 'vant'
 
     export default {
         name: 'AgentChat',
         data() {
-            return { question: '', messages: [], loading: false }
+            return {
+                question: '',
+                messages: [],
+                loading: false,
+                pendingConfirm: null,
+                confirming: false,
+                sessionId: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
+            }
         },
         methods: {
             async send() {
                 const q = this.question.trim()
-                if (!q || this.loading) return
+                if (!q || this.loading || this.pendingConfirm) return
                 this.messages.push({ role: 'user', content: q })
                 this.question = ''
                 this.loading = true
                 this.scrollBottom()
                 try {
-                    const res = await agentChat(q)
-                    this.messages.push({ role: 'ai', content: res.data || '' })
+                    const res = await agentChat(q, this.sessionId)
+                    const d = res.data || {}
+                    if (d.type === 'confirm') {
+                        this.pendingConfirm = d
+                    } else {
+                        this.messages.push({ role: 'ai', content: d.content || '' })
+                    }
                 } catch (e) {
-                    this.messages.push({ role: 'ai', content: 'AI 服务暂不可用，请稍后再试。' })
+                    this.messages.push({ role: 'ai', content: 'AI ' + '服务暂不可用，请稍后再试。' })
                 } finally {
                     this.loading = false
                     this.scrollBottom()
                 }
+            },
+            async doConfirm() {
+                if (!this.pendingConfirm) return
+                this.confirming = true
+                try {
+                    const res = await agentConfirm(this.pendingConfirm.question, this.pendingConfirm.action, this.pendingConfirm.params, this.sessionId)
+                    const d = res.data || {}
+                    this.messages.push({ role: 'ai', content: d.content || '' })
+                } catch (e) {
+                    this.messages.push({ role: 'ai', content: 'AI ' + '服务暂不可用，请稍后再试。' })
+                } finally {
+                    this.pendingConfirm = null
+                    this.confirming = false
+                    this.scrollBottom()
+                }
+            },
+            cancelConfirm() {
+                this.pendingConfirm = null
+                showToast('已取消')
             },
             scrollBottom() {
                 this.$nextTick(() => {
@@ -73,6 +113,10 @@
     .msg-bubble.user-bubble { background: linear-gradient(135deg, #3a6ec5, #2456a8); color: #fff; border-bottom-right-radius: 4px; }
     .msg-bubble.ai-bubble { background: rgba(16,28,56,0.85); border: 1px solid rgba(120,170,255,0.18); color: #dbe4f5; border-bottom-left-radius: 4px; }
     .msg-bubble.typing { color: #8fa0c2; }
+    .confirm-card { margin: 8px 0; padding: 12px 14px; border-radius: 12px; background: rgba(255, 193, 7, 0.10); border: 1px solid rgba(255, 193, 7, 0.35); }
+    .confirm-tip { font-size: 13px; color: #f5c25c; margin-bottom: 6px; }
+    .confirm-summary { font-size: 14px; color: #e8eefc; line-height: 1.6; }
+    .confirm-btns { display: flex; gap: 10px; margin-top: 10px; }
     .agent-input { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: rgba(10,16,34,0.94); border-top: 1px solid rgba(120,170,255,0.16); }
     .agent-input :deep(.van-field) { background: rgba(10,18,38,0.6); border: 1px solid rgba(120,170,255,0.16); border-radius: 10px; }
     .agent-input :deep(.van-field__control) { color: #e8eefc; }
