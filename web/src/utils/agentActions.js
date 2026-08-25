@@ -39,7 +39,10 @@ async function dispatchAction(op, payload) {
         case 'focus_spot': {
             // 回到首页，调用首页已注册的搜索定位能力（复用搜索框逻辑）
             const name = payload.spot || '故宫'
-            if (router.currentRoute.value.path !== '/home') await router.push('/home')
+            const path = router.currentRoute.value.path
+            // 已在故宫详情页：跳过回首页定位，避免页面乱跳
+            if (path === '/spot/1') break
+            if (path !== '/home') await router.push('/home')
             await sleep(400)
             if (store.sceneApi && typeof store.sceneApi.focusSpot === 'function') {
                 store.sceneApi.focusSpot(name)

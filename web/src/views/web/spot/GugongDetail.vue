@@ -279,6 +279,7 @@
                 const d = e.detail || {}
                 const slotId = parseInt(d.slotId, 10)
                 if (!slotId) return
+                this.activeTab = 'ticket'   // 保险：确保在购票选择 tab（防 switch_tab 事件丢失）
                 if (!this.slots.length) {
                     this.pendingSlot = { slotId, quantity: d.quantity }
                     return
