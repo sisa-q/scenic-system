@@ -5,7 +5,8 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms))
 
 /**
  * AI 页面动作调度器（逐步执行 + 过程可视化）
- * 动作：goto_orders / focus_spot / goto_spot / select_slot
+ * 动作：goto_orders / focus_spot / goto_spot / switch_tab / select_slot
+ * 页面联动通过 window CustomEvent（目标组件自行监听，模板/CSS 零侵入）
  * @param actions 后端下发动作数组 [{op,label,payload}]
  * @param onStep  每步状态回调 (label, status: 'running'|'done'|'error'|'finished')
  */
@@ -22,7 +23,7 @@ export async function executeAgentActions(actions, { onStep } = {}) {
             continue
         }
         if (onStep) onStep(label, 'done')
-        await sleep(700)
+        await sleep(600)
     }
     if (onStep) onStep('', 'finished')
 }
@@ -36,31 +37,34 @@ async function dispatchAction(op, payload) {
             break
         }
         case 'focus_spot': {
+            // 回到首页，调用首页已注册的搜索定位能力（复用搜索框逻辑）
             const name = payload.spot || '故宫'
             if (router.currentRoute.value.path !== '/home') await router.push('/home')
-            await sleep(350)
+            await sleep(400)
             if (store.sceneApi && typeof store.sceneApi.focusSpot === 'function') {
                 store.sceneApi.focusSpot(name)
             }
-            await sleep(1000) // 让地球旋转定位动画可见
+            await sleep(1100) // 让地球旋转定位动画可见
             break
         }
         case 'goto_spot': {
             const spotId = payload.spotId || 1
-            const query = {}
-            if (payload.tab) query.tab = payload.tab
-            await router.push({ path: '/spot/' + spotId, query })
-            await sleep(600)
+            await router.push('/spot/' + spotId)
+            await sleep(1600) // 等景点页组件加载 + 时段拉取完成
+            break
+        }
+        case 'switch_tab': {
+            // 通知景点页切换到指定 tab（购票选择）
+            window.dispatchEvent(new CustomEvent('agent:switch-tab', { detail: { tab: payload.tab || 'ticket' } }))
+            await sleep(700)
             break
         }
         case 'select_slot': {
-            // 通过路由 query 通知景点页自动选中时段并跳转下单确认页（数量预填）
-            const spotId = payload.spotId || 1
-            const query = { tab: 'ticket' }
-            if (payload.slotId) query.slot = payload.slotId
-            if (payload.quantity) query.qty = payload.quantity
-            await router.replace({ path: '/spot/' + spotId, query })
-            await sleep(1200) // 等待页面高亮时段并自动跳转下单确认页
+            // 通知景点页高亮时段并自动跳转下单确认页（数量预填）
+            window.dispatchEvent(new CustomEvent('agent:select-slot', {
+                detail: { slotId: payload.slotId, quantity: payload.quantity || 1 }
+            }))
+            await sleep(1600) // 等页面高亮 + 自动跳转下单确认页
             break
         }
         default:

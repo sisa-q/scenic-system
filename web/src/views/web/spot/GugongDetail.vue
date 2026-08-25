@@ -116,7 +116,7 @@
                                     v-for="slot in slots"
                                     :key="slot.id"
                                     class="slot-card"
-                                    :class="{ disabled: slot.status !== 1, 'agent-selected': agentAutoSlot === slot.id }"
+                                    :class="{ disabled: slot.status !== 1 }"
                                     @click="selectSlot(slot)"
                             >
                                 <div class="slot-time">{{ formatDateTime(slot.startTime) }} - {{ formatDateTime(slot.endTime) }}</div>
@@ -155,8 +155,7 @@
                 showVideoDialog: false,
                 activeTab: 'video',
                 previewIndex: null,
-                agentAutoSlot: null,
-                agentAutoQty: 1,
+                pendingSlot: null,   // AI 选时段：若时段还没加载完先缓存
                 gugongVideoUrl: '//player.bilibili.com/player.html?bvid=BV1jL4y1V7AM&page=1&high_quality=1&danmaku=0',
                 tabs: [
                     { key: 'video', label: '视频介绍' },
@@ -209,9 +208,6 @@
             await this.fetchSpot(id)
             await this.fetchSlots(id)
 
-            // AI 调度：根据路由参数自动切换购票 tab / 选中时段
-            this.applyAgentQuery()
-
             // 仅从首页点击“故宫”图标进入时展示宣传片弹窗，且同一会话只展示一次（返回购票页不再反复弹）
             if (this.$route.query.v === '1' && !sessionStorage.getItem('gugong_video_shown')) {
                 sessionStorage.setItem('gugong_video_shown', '1')
@@ -222,12 +218,18 @@
             this.bgTimer = setInterval(() => {
                 this.currentBgIndex = (this.currentBgIndex + 1) % this.bgImages.length
             }, 6000)
+
+            // AI 悬浮窗调度：监听 切换tab / 选时段 事件（只加脚本，不动模板与样式）
+            window.addEventListener('agent:switch-tab', this.onAgentSwitchTab)
+            window.addEventListener('agent:select-slot', this.onAgentSelectSlot)
         },
         beforeDestroy() {
             if (this.bgTimer) {
                 clearInterval(this.bgTimer)
                 this.bgTimer = null
             }
+            window.removeEventListener('agent:switch-tab', this.onAgentSwitchTab)
+            window.removeEventListener('agent:select-slot', this.onAgentSelectSlot)
         },
         methods: {
             async fetchSpot(id) {
@@ -249,6 +251,11 @@
                         slotsData = res
                     }
                     this.slots = slotsData.filter(slot => slot.status === 1)
+                    if (this.pendingSlot) {
+                        const p = this.pendingSlot
+                        this.pendingSlot = null
+                        this.highlightAndGo(p.slotId, p.quantity)
+                    }
                 } catch (e) {
                     console.error('获取时段失败:', e)
                     this.slots = []
@@ -262,6 +269,40 @@
                     return parts[0].slice(5) + ' ' + parts[1].slice(0, 5)
                 }
                 return dateTimeStr
+            },
+            // ===== AI 悬浮窗调度 =====
+            onAgentSwitchTab(e) {
+                const tab = e.detail && e.detail.tab
+                if (tab) this.activeTab = tab
+            },
+            onAgentSelectSlot(e) {
+                const d = e.detail || {}
+                const slotId = parseInt(d.slotId, 10)
+                if (!slotId) return
+                if (!this.slots.length) {
+                    this.pendingSlot = { slotId, quantity: d.quantity }
+                    return
+                }
+                this.highlightAndGo(slotId, d.quantity)
+            },
+            highlightAndGo(slotId, quantity) {
+                if (!this.slots.length) return
+                const slot = this.slots.find(s => s.id === slotId)
+                if (!slot || slot.status !== 1) return
+                const idx = this.slots.findIndex(s => s.id === slotId)
+                const cards = this.$el ? this.$el.querySelectorAll('.slot-card') : []
+                const el = cards[idx]
+                if (el) {
+                    // 高亮时段卡片（JS 直接改样式，不动模板/CSS）
+                    el.style.borderColor = '#ffd04b'
+                    el.style.boxShadow = '0 0 0 3px rgba(255,208,75,.35), 0 4px 18px rgba(255,208,75,.25)'
+                    el.style.transition = 'all .3s'
+                }
+                // 约 0.9 秒后自动进入下单确认页（数量预填）
+                setTimeout(() => {
+                    if (el) { el.style.borderColor = ''; el.style.boxShadow = '' }
+                    this.selectSlot(slot, quantity)
+                }, 900)
             },
             selectSlot(slot, qtyOverride) {
                 if (this.spotClosed) {
@@ -289,32 +330,6 @@
                     }
                 })
             },
-
-            // AI 调度：根据路由 query 自动切 tab / 选中时段（高亮后自动跳下单确认页）
-            applyAgentQuery() {
-                const q = this.$route.query
-                if (q.tab === 'ticket') this.activeTab = 'ticket'
-                const slotId = parseInt(q.slot, 10)
-                if (slotId > 0) {
-                    this.agentAutoSlot = slotId
-                    const qty = parseInt(q.qty, 10)
-                    this.agentAutoQty = qty > 0 ? qty : 1
-                    this.tryAutoSelectSlot()
-                }
-            },
-            tryAutoSelectSlot() {
-                if (!this.agentAutoSlot || !this.slots.length) return
-                const slot = this.slots.find(s => s.id === this.agentAutoSlot)
-                if (!slot || slot.status !== 1) {
-                    this.agentAutoSlot = null
-                    return
-                }
-                // 高亮时段卡片约 0.9 秒，让用户看到“AI 正在选时段”，再自动跳转下单确认页
-                setTimeout(() => {
-                    this.selectSlot(slot, this.agentAutoQty)
-                    this.agentAutoSlot = null
-                }, 900)
-            },
             previewImage(idx) {
                 this.previewIndex = idx
             },
@@ -338,10 +353,6 @@
         watch: {
             // 关闭弹窗仅隐藏，不记录“已看过”，下次进入仍会展示
             showVideoDialog() {
-            },
-            // AI 调度：路由 query 变化（如 select_slot 动作 replace 路由）时重新应用
-            '$route.query'() {
-                this.applyAgentQuery()
             }
         }
     }
@@ -709,15 +720,6 @@
         gap: 10px;
         max-width: 100%;
     }
-    .slot-card.agent-selected {
-        border-color: #ffd04b !important;
-        box-shadow: 0 0 0 3px rgba(255, 208, 75, 0.35), 0 4px 18px rgba(255, 208, 75, 0.25) !important;
-        animation: agent-pulse 0.6s ease-in-out 3;
-    }
-    @keyframes agent-pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.03); }
-    }
     .slot-card {
         background: rgba(255, 255, 255, 0.7);
         border-radius: 12px;
@@ -802,16 +804,7 @@
         .gallery-grid {
             grid-template-columns: repeat(2, 1fr);
         }
-        .slot-card.agent-selected {
-        border-color: #ffd04b !important;
-        box-shadow: 0 0 0 3px rgba(255, 208, 75, 0.35), 0 4px 18px rgba(255, 208, 75, 0.25) !important;
-        animation: agent-pulse 0.6s ease-in-out 3;
-    }
-    @keyframes agent-pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.03); }
-    }
-    .slot-card {
+        .slot-card {
             flex-direction: column;
             align-items: flex-start;
             gap: 8px;

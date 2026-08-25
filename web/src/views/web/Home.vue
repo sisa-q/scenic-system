@@ -344,23 +344,12 @@
                 this.controls.update()
             },
 
-            // AI 调度：把景点名聚焦到屏幕中心（复用搜索定位逻辑）
+            // AI 调度：把景点名聚焦到屏幕中心（直接复用首页搜索框的定位逻辑）
             focusSpotByName(name) {
                 const kw = (name || '').trim()
-                if (!kw || !this.hotspots.length) return
-                const matched = this.hotspots.find(h =>
-                    (h.name || '').includes(kw) || (h.country || '').includes(kw) || (h.label || '').includes(kw))
-                if (!matched) return
-                const radius = 49.5
-                const phi = (90 - matched.lat) * Math.PI / 180
-                const theta = matched.lng * Math.PI / 180
-                const pos = new THREE.Vector3(
-                    radius * Math.sin(phi) * Math.cos(theta),
-                    radius * Math.cos(phi),
-                    radius * Math.sin(phi) * Math.sin(theta)
-                )
-                this.rotateViewToPosition(pos)
-                this.selectedName = matched.label || matched.name
+                if (!kw) return
+                this.searchQuery = kw
+                this.performSearch()
             },
 
             // ====== 搜索定位：在原有视角下把目标旋转到屏幕正中心（不改动原定位方式） ======

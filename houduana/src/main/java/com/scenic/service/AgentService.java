@@ -156,7 +156,7 @@ public class AgentService {
         answer.put("type", "answer");
         List<Map<String, Object>> acts = buildActions(steps, question);
         String fc = "处理步骤较多，请稍后再试。";
-        if (!acts.isEmpty()) fc = "已自动为你操作页面：定位故宫 → 购票选择 → 选中时段。请在下单确认页核对数量后提交订单。";
+        if (!acts.isEmpty()) fc = "已自动为你操作页面：定位故宫 → 进入详情 → 购票选择 → 选中时段。请在下单确认页核对数量后提交订单。";
         answer.put("content", fc);
         answer.put("steps", steps);
         answer.put("actions", acts);
@@ -208,21 +208,23 @@ public class AgentService {
         if (tools.contains("get_my_orders")) {
             actions.add(pageAction("goto_orders", null, "打开我的订单"));
         } else if (buyIntent && (tools.contains("get_policies") || tools.contains("get_slots") || tools.contains("place_order"))) {
-            // ===== 逐步自动购票链：①定位 -> ②进入购票页 -> ③选时段填数量 =====
+            // ===== 逐步自动购票链：①定位 -> ②进详情页 -> ③切购票tab -> ④选时段填数量 =====
             Map<String, Object> f = new LinkedHashMap<>();
             f.put("spot", "故宫");
             actions.add(pageAction("focus_spot", f, "① 定位故宫（3D 地球）"));
             Map<String, Object> g = new LinkedHashMap<>();
             g.put("spotId", 1);
-            g.put("tab", "ticket");
-            actions.add(pageAction("goto_spot", g, "② 进入故宫 · 购票选择"));
+            actions.add(pageAction("goto_spot", g, "② 进入故宫详情页"));
+            Map<String, Object> st = new LinkedHashMap<>();
+            st.put("tab", "ticket");
+            actions.add(pageAction("switch_tab", st, "③ 切换到购票选择"));
             if (slotId == null && policyId != null) slotId = firstSlotOfPolicy(policyId);
             if (slotId == null) slotId = firstSlotOfSpot(1L);
             if (slotId != null) {
                 Map<String, Object> s = new LinkedHashMap<>();
                 s.put("slotId", slotId);
                 s.put("quantity", qty == null ? 1 : qty);
-                actions.add(pageAction("select_slot", s, "③ 选择时段并填写数量"));
+                actions.add(pageAction("select_slot", s, "④ 选择时段并填写数量"));
             }
         } else {
             // 仅定位/天气/浏览类意图才聚焦（避免纯查询打断用户当前页面）
