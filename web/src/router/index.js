@@ -60,6 +60,11 @@ const routes = [
     },
     // 共用登录页
     {
+        path: '/agent',
+        component: () => import('@/views/web/AgentChat.vue'),
+        meta: { title: 'AI 助手', layout: 'web' }
+    },
+    {
         path: '/login',
         component: () => import('@/views/web/Login.vue'),
         meta: { title: '登录', layout: 'web' }
