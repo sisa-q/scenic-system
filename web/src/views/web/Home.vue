@@ -317,6 +317,10 @@
             },
             onPortalCat(type) {
                 const names = { hotel: '酒店', flight: '机票', ai: 'AI 助手' }
+                if (type === 'ai') {
+                    this.$router.push('/agent')
+                    return
+                }
                 alert('「' + (names[type] || '该') + '」模块建设中，敬请期待')
             },
             onGoSpots() {
