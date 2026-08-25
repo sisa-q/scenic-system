@@ -55,6 +55,8 @@
                         <van-button size="small" plain @click="cancelConfirm">取消</van-button>
                     </div>
                 </div>
+
+                <div v-if="execLabel" class="aw-exec">{{ execLabel }}</div>
             </div>
 
             <div class="aw-input no-drag">
@@ -93,6 +95,7 @@
         data() {
             return {
                 draft: '',
+                execLabel: '',
                 pos: { x: null, y: null },
                 dragging: false,
                 startX: 0,
@@ -164,7 +167,24 @@
             resetChat() {
                 this.agentStore.reset()
                 this.draft = ''
+                this.execLabel = ''
                 showToast('已清空会话')
+            },
+            async runActions(actions) {
+                if (!actions || !actions.length) return
+                try {
+                    await executeAgentActions(actions, { onStep: this.onAgentStep })
+                } catch (e) {
+                    console.error('[agent] 动作链执行异常', e)
+                }
+            },
+            onAgentStep(label, status) {
+                if (status === 'running') this.execLabel = '🔧 ' + label + '…'
+                else if (status === 'done') this.execLabel = '✅ ' + label
+                else if (status === 'error') this.execLabel = '⚠️ ' + label + ' 失败'
+                else if (status === 'finished') {
+                    setTimeout(() => { this.execLabel = '' }, 1500)
+                }
             },
             async send() {
                 const q = this.draft.trim()
@@ -177,9 +197,11 @@
                     const d = res.data || {}
                     if (d.type === 'confirm') {
                         this.agentStore.setConfirm(d)
+                        // 确认卡出现的同时，页面逐步执行定位 -> 进购票页 -> 选时段
+                        this.runActions(d.actions)
                     } else {
                         this.agentStore.pushMsg({ role: 'ai', content: d.content || '', steps: d.steps || [], actions: d.actions || [] })
-                        if (d.actions && d.actions.length) executeAgentActions(d.actions)
+                        this.runActions(d.actions)
                     }
                 } catch (e) {
                     this.agentStore.pushMsg({ role: 'ai', content: 'AI 服务暂不可用，请稍后再试。', steps: [], actions: [] })
@@ -195,7 +217,7 @@
                     const res = await agentConfirm(c.question, c.action, c.params, this.agentStore.sessionId)
                     const d = res.data || {}
                     this.agentStore.pushMsg({ role: 'ai', content: d.content || '', steps: d.steps || [], actions: d.actions || [] })
-                    if (d.actions && d.actions.length) executeAgentActions(d.actions)
+                    this.runActions(d.actions)
                 } catch (e) {
                     this.agentStore.pushMsg({ role: 'ai', content: 'AI 服务暂不可用，请稍后再试。', steps: [], actions: [] })
                 } finally {
@@ -308,6 +330,15 @@
     .aw-step.done .step-status { color: #2fb56b; }
     .aw-step.need_confirm .step-status { color: #f5c25c; }
     .aw-step .step-summary { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .aw-exec {
+        margin: 8px 0;
+        padding: 8px 10px;
+        border-radius: 10px;
+        font-size: 12px;
+        color: #7ef0a2;
+        background: rgba(18, 60, 40, 0.35);
+        border: 1px solid rgba(80, 220, 140, 0.3);
+    }
     .aw-confirm { margin: 8px 0; padding: 10px 12px; border-radius: 10px; background: rgba(255, 193, 7, 0.10); border: 1px solid rgba(255, 193, 7, 0.35); }
     .aw-confirm-tip { font-size: 12px; color: #f5c25c; margin-bottom: 4px; }
     .aw-confirm-summary { font-size: 13px; color: #e8eefc; line-height: 1.6; }

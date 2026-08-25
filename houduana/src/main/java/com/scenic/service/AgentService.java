@@ -144,6 +144,7 @@ public class AgentService {
         }
         if (hasConfirm && pending != null) {
             pending.put("steps", steps);
+            pending.put("actions", buildActions(steps, question));
             return pending;
         }
         // 终极兜底：模型仍未调用工具时，按问题自动推断写操作（支付/退款 + 订单号或最新订单）
@@ -153,9 +154,12 @@ public class AgentService {
         }
         Map<String, Object> answer = new LinkedHashMap<>();
         answer.put("type", "answer");
-        answer.put("content", "处理步骤较多，请稍后再试。");
+        List<Map<String, Object>> acts = buildActions(steps, question);
+        String fc = "处理步骤较多，请稍后再试。";
+        if (!acts.isEmpty()) fc = "已自动为你操作页面：定位故宫 → 购票选择 → 选中时段。请在下单确认页核对数量后提交订单。";
+        answer.put("content", fc);
         answer.put("steps", steps);
-        answer.put("actions", buildActions(steps, question));
+        answer.put("actions", acts);
         return answer;
     }
 
@@ -193,17 +197,33 @@ public class AgentService {
                 qty = toInt(p.get("quantity"));
             }
         }
+        if (qty == null && question != null) {
+            java.util.regex.Matcher qm = java.util.regex.Pattern.compile("(\\d+)\\s*张").matcher(question);
+            if (qm.find()) {
+                try { qty = Integer.parseInt(qm.group(1)); } catch (Exception ignored) {}
+            }
+        }
         boolean buyIntent = question != null
             && (question.contains("买") || question.contains("下单") || question.contains("预约") || question.contains("购"));
         if (tools.contains("get_my_orders")) {
-            actions.add(pageAction("goto_orders", null));
+            actions.add(pageAction("goto_orders", null, "打开我的订单"));
         } else if (buyIntent && (tools.contains("get_policies") || tools.contains("get_slots") || tools.contains("place_order"))) {
-            Map<String, Object> payload = new LinkedHashMap<>();
-            payload.put("spotId", 1);
-            if (slotId != null) payload.put("slotId", slotId);
-            if (policyId != null) payload.put("policyId", policyId);
-            if (qty != null) payload.put("quantity", qty);
-            actions.add(pageAction("open_ticket_form", payload));
+            // ===== 逐步自动购票链：①定位 -> ②进入购票页 -> ③选时段填数量 =====
+            Map<String, Object> f = new LinkedHashMap<>();
+            f.put("spot", "故宫");
+            actions.add(pageAction("focus_spot", f, "① 定位故宫（3D 地球）"));
+            Map<String, Object> g = new LinkedHashMap<>();
+            g.put("spotId", 1);
+            g.put("tab", "ticket");
+            actions.add(pageAction("goto_spot", g, "② 进入故宫 · 购票选择"));
+            if (slotId == null && policyId != null) slotId = firstSlotOfPolicy(policyId);
+            if (slotId == null) slotId = firstSlotOfSpot(1L);
+            if (slotId != null) {
+                Map<String, Object> s = new LinkedHashMap<>();
+                s.put("slotId", slotId);
+                s.put("quantity", qty == null ? 1 : qty);
+                actions.add(pageAction("select_slot", s, "③ 选择时段并填写数量"));
+            }
         } else {
             // 仅定位/天气/浏览类意图才聚焦（避免纯查询打断用户当前页面）
             boolean locateIntent = question != null && (question.contains("定位") || question.contains("找到")
@@ -213,15 +233,16 @@ public class AgentService {
             if (spot != null && locateIntent) {
                 Map<String, Object> payload = new LinkedHashMap<>();
                 payload.put("spot", spot);
-                actions.add(pageAction("focus_spot", payload));
+                actions.add(pageAction("focus_spot", payload, "定位「" + spot + "」（3D 地球）"));
             }
         }
         return actions;
     }
 
-    private Map<String, Object> pageAction(String op, Map<String, Object> payload) {
+    private Map<String, Object> pageAction(String op, Map<String, Object> payload, String label) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("op", op);
+        m.put("label", label == null ? "" : label);
         m.put("payload", payload == null ? new LinkedHashMap<>() : payload);
         return m;
     }
@@ -239,6 +260,27 @@ public class AgentService {
 
     private Integer toInt(Object o) {
         try { return o == null ? null : Integer.valueOf(String.valueOf(o)); } catch (Exception e) { return null; }
+    }
+
+    /** 取某票种最近的可用时段 id */
+    private Long firstSlotOfPolicy(Long policyId) {
+        if (slotRepository == null || policyId == null) return null;
+        return slotRepository.findAll().stream()
+            .filter(s -> s.getStatus() != null && s.getStatus() == 1 && policyId.equals(s.getPolicyId()))
+            .sorted(Comparator.comparing(TimeSlot::getStartTime))
+            .map(TimeSlot::getId).findFirst().orElse(null);
+    }
+
+    /** 取某景点（故宫）所有在售票种里最近的可用时段 id */
+    private Long firstSlotOfSpot(Long spotId) {
+        if (slotRepository == null || policyRepository == null || spotId == null) return null;
+        List<Long> pids = policyRepository.findAll().stream()
+            .filter(p -> spotId.equals(p.getSpotId()) && (p.getStatus() == null || p.getStatus() == 1))
+            .map(TicketPolicy::getId).toList();
+        return slotRepository.findAll().stream()
+            .filter(s -> s.getStatus() != null && s.getStatus() == 1 && pids.contains(s.getPolicyId()))
+            .sorted(Comparator.comparing(TimeSlot::getStartTime))
+            .map(TimeSlot::getId).findFirst().orElse(null);
     }
 
     /** 判断用户问题是否表达“执行写操作”的意图（用于纠错：防止模型谎称完成） */
@@ -290,7 +332,7 @@ public class AgentService {
         List<Map<String, Object>> steps = new ArrayList<>();
         steps.add(step(action, "done", result));
         List<Map<String, Object>> actions = new ArrayList<>();
-        actions.add(pageAction("goto_orders", null));
+        actions.add(pageAction("goto_orders", null, "打开我的订单"));
         Map<String, Object> answer = new LinkedHashMap<>();
         answer.put("type", "answer");
         answer.put("content", content);
