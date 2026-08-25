@@ -40,6 +40,10 @@
                 <el-icon><Star /></el-icon>
                 <span>评价管理</span>
             </el-menu-item>
+            <el-menu-item index="/admin/knowledge">
+                <el-icon><Reading /></el-icon>
+                <span>知识库</span>
+            </el-menu-item>
             <el-menu-item index="/admin/notice">
                 <el-icon><Notification /></el-icon>
                 <span>公告发布</span>
@@ -59,7 +63,7 @@
 <script>
     import {
         Monitor, Location, Ticket, Clock, List,
-        Star, Notification, Checked, User
+        Star, Notification, Checked, User, Reading
     } from '@element-plus/icons-vue'
 
     export default {

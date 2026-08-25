@@ -38,6 +38,9 @@ public class DataInitializer implements CommandLineRunner {
     @Autowired
     private TimeSlotRepository slotRepository;
 
+    @Autowired
+    private KnowledgeDocRepository knowledgeDocRepository;
+
     private final DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Override
@@ -47,6 +50,7 @@ public class DataInitializer implements CommandLineRunner {
         migrateLegacyPasswords();
         initDemoData();
         ensureGugongData();
+        ensureKnowledgeDocs();
     }
 
     /** 初始化管理员账号 */
@@ -296,6 +300,24 @@ public class DataInitializer implements CommandLineRunner {
                 System.out.println("===== \u7968\u79cd\u91cd\u547d\u540d\uff1a" + oldName + " -> " + newName + " =====");
             }
         }
+    }
+
+    /** 知识库默认文档：空表时种植（管理员可编辑） */
+    private void ensureKnowledgeDocs() {
+        if (knowledgeDocRepository == null || knowledgeDocRepository.count() > 0) return;
+        KnowledgeDoc d1 = new KnowledgeDoc();
+        d1.setTitle("故宫开放时间与门票");
+        d1.setContent("开放时间：旺季（4月-10月）8:30-17:00，淡季（11月-3月）8:30-16:30，周一闭馆（法定节假日除外）。本系统内故宫成人票价格以票种为准（管理端票务策略可查），学生票半价。");
+        knowledgeDocRepository.save(d1);
+        KnowledgeDoc d2 = new KnowledgeDoc();
+        d2.setTitle("购票与分时预约方式");
+        d2.setContent("实行实名制分时预约：游客在本系统选择景点→票种→分时时段→下单支付（支持模拟支付与支付宝沙箱）→凭订单核销码入园。未核销订单可申请退款。");
+        knowledgeDocRepository.save(d2);
+        KnowledgeDoc d3 = new KnowledgeDoc();
+        d3.setTitle("游览建议与交通");
+        d3.setContent("交通：地铁1号线天安门东站或天安门西站。游览建议：沿中轴线游览太和殿、中和殿、保和殿，再逛东西六宫，全程约3-4小时。");
+        knowledgeDocRepository.save(d3);
+        System.out.println("===== 知识库默认文档已种植 =====");
     }
 
     /** If any user was created before BCrypt migration, re-hash its plaintext password. */

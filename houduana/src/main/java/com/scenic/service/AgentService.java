@@ -2,8 +2,10 @@ package com.scenic.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.scenic.entity.KnowledgeDoc;
 import com.scenic.entity.ScenicSpot;
 import com.scenic.entity.TicketPolicy;
+import com.scenic.repository.KnowledgeDocRepository;
 import com.scenic.repository.ScenicSpotRepository;
 import com.scenic.repository.TicketPolicyRepository;
 import com.scenic.vo.WeatherPoint;
@@ -17,16 +19,13 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
-/** 游客问答 Agent：调用本地 Ollama（qwen2.5:3b），注入故宫知识 + 系统数据 + 实时天气 */
+/** 游客问答 Agent：Ollama(qwen2.5:3b) 推理 + nomic-embed-text 知识库向量检索(RAG) */
 @Service
 public class AgentService {
 
     private static final String SYSTEM_PROMPT = "你是智慧景区游客助手，服务于北京故宫智慧景区系统。可以解答故宫景点、开放时间、门票、分时预约、天气、退款、个人中心等问题。";
-
-    private static final String KNOWLEDGE = "【故宫景区知识】开放时间：旺季（4月-10月）8:30-17:00，淡季（11月-3月）8:30-16:30，周一闭馆（法定节假日除外）。实行实名制分时预约，可提前在官网、微信小程序或本系统购票预约，入园刷身份证。交通：地铁1号线天安门东站或天安门西站。游览建议：沿中轴线游览太和殿、中和殿、保和殿，再逛东西六宫，全程约3-4小时。";
 
     @Autowired(required = false)
     private ScenicSpotRepository spotRepository;
@@ -37,6 +36,9 @@ public class AgentService {
     @Autowired(required = false)
     private WeatherService weatherService;
 
+    @Autowired(required = false)
+    private KnowledgeDocRepository docRepository;
+
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -46,10 +48,13 @@ public class AgentService {
     @Value("${agent.model:qwen2.5:3b}")
     private String model;
 
+    @Value("${agent.embed-model:nomic-embed-text}")
+    private String embedModel;
+
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
 
     public String chat(String question) throws Exception {
-        String prompt = SYSTEM_PROMPT + "\n\n" + buildContext() + "\n\n" + "用户问题：" + question + "\n\n" + "请基于以上【系统信息】回答游客问题，简洁准确友好，用中文；信息里没有的请诚实说明，不要编造。";
+        String prompt = SYSTEM_PROMPT + "\n\n" + buildContext(question) + "\n\n" + "用户问题：" + question + "\n\n" + "请优先依据【知识库相关文档】回答，然后参考【系统信息】，简洁准确友好，用中文；信息里没有的请诚实说明，不要编造。";
         Map<String, Object> req = new LinkedHashMap<>();
         req.put("model", model);
         req.put("prompt", prompt);
@@ -75,10 +80,10 @@ public class AgentService {
         return answer;
     }
 
-    /** 构建上下文：故宫知识 + 系统内景点/票种 + 故宫实时天气 */
-    private String buildContext() {
-        StringBuilder sb = new StringBuilder(KNOWLEDGE);
-        sb.append("\n\n").append("【系统内景点与门票】").append("\n");
+    /** 构建上下文：系统数据 + 实时天气 + 知识库向量检索 top-k */
+    private String buildContext(String question) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("【系统内景点与门票】").append("\n");
         if (spotRepository != null) {
             for (ScenicSpot s : spotRepository.findAll()) {
                 sb.append("景点：").append(s.getName()).append("，")
@@ -106,6 +111,58 @@ public class AgentService {
             }
         } catch (Exception ignored) {
         }
+        // ===== 知识库 RAG：问题向量化 + 文档相似度检索 top3 =====
+        try {
+            if (docRepository != null) {
+                List<KnowledgeDoc> docs = docRepository.findAll();
+                if (!docs.isEmpty()) {
+                    float[] qv = embed(question);
+                    List<Object[]> scored = new ArrayList<>();
+                    for (KnowledgeDoc d : docs) {
+                        float[] dv = embed(d.getTitle() + "\n" + d.getContent());
+                        scored.add(new Object[]{cosine(qv, dv), d});
+                    }
+                    scored.sort((a, b) -> Double.compare((double) b[0], (double) a[0]));
+                    sb.append("\n").append("【知识库相关文档】").append("\n");
+                    int top = Math.min(5, scored.size());
+                    for (int i = 0; i < top; i++) {
+                        KnowledgeDoc d = (KnowledgeDoc) scored.get(i)[1];
+                        sb.append("文档：").append(d.getTitle()).append("\n").append(d.getContent()).append("\n");
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+        }
         return sb.toString();
+    }
+
+    private float[] embed(String text) throws Exception {
+        Map<String, Object> req = new LinkedHashMap<>();
+        req.put("model", embedModel);
+        req.put("prompt", text);
+        String json = objectMapper.writeValueAsString(req);
+        HttpRequest r = HttpRequest.newBuilder()
+                .uri(URI.create(ollamaUrl + "/api/embeddings"))
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofSeconds(60))
+                .POST(HttpRequest.BodyPublishers.ofString(json))
+                .build();
+        HttpResponse<String> resp = http.send(r, HttpResponse.BodyHandlers.ofString());
+        JsonNode node = objectMapper.readTree(resp.body());
+        JsonNode emb = node.path("embedding");
+        float[] arr = new float[emb.size()];
+        for (int i = 0; i < emb.size(); i++) arr[i] = (float) emb.get(i).asDouble();
+        return arr;
+    }
+
+    private double cosine(float[] a, float[] b) {
+        double dot = 0, na = 0, nb = 0;
+        int len = Math.min(a.length, b.length);
+        for (int i = 0; i < len; i++) {
+            dot += a[i] * b[i];
+            na += a[i] * a[i];
+            nb += b[i] * b[i];
+        }
+        return dot / (Math.sqrt(na) * Math.sqrt(nb) + 1e-9);
     }
 }

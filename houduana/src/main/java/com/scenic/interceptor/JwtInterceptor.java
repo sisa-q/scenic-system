@@ -40,7 +40,8 @@ public class JwtInterceptor implements HandlerInterceptor {
             // 核销管理
             "/api/verify",
             // 流客统计大屏
-            "/api/flow"
+            "/api/flow",
+            "/api/knowledge"
     };
 
     @Override

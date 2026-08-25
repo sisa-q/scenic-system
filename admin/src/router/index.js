@@ -48,6 +48,11 @@ const routes = [
                 meta: { title: '评价管理', icon: 'Star' }
             },
             {
+                path: 'knowledge',
+                component: () => import('@/views/admin/KnowledgeManage.vue'),
+                meta: { title: '知识库', icon: 'Reading' }
+            },
+            {
                 path: 'notice',
                 component: () => import('@/views/admin/NoticeManage.vue'),
                 meta: { title: '公告发布', icon: 'Notification' }
