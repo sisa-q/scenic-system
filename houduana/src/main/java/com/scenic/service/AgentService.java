@@ -80,6 +80,7 @@ public class AgentService {
         boolean writeToolCalled = false;
         boolean hasConfirm = false;
         Map<String, Object> pending = null;
+        List<Map<String, Object>> steps = new ArrayList<>();
         for (int round = 0; round < 4; round++) {
             JsonNode resp = chatApi(messages, true);
             JsonNode msg = resp.path("message");
@@ -103,8 +104,10 @@ public class AgentService {
                         cur.put("params", args);
                         cur.put("question", question);
                         cur.put("summary", toolExecutor == null ? "" : toolExecutor.preview(name, args));
+                        steps.add(stepWithParams(name, "need_confirm", String.valueOf(cur.get("summary")), args));
                     } else {
                         String result = toolExecutor == null ? "工具不可用" : toolExecutor.execute(name, args, userId);
+                        steps.add(step(name, "done", result));
                         Map<String, Object> asst = new LinkedHashMap<>();
                         asst.put("role", "assistant");
                         asst.put("content", "");
@@ -134,10 +137,15 @@ public class AgentService {
             Map<String, Object> answer = new LinkedHashMap<>();
             answer.put("type", "answer");
             answer.put("content", content);
+            answer.put("steps", steps);
+            answer.put("actions", buildActions(steps, question));
             appendMemory(history, question, content);
             return answer;
         }
-        if (hasConfirm && pending != null) return pending;
+        if (hasConfirm && pending != null) {
+            pending.put("steps", steps);
+            return pending;
+        }
         // 终极兜底：模型仍未调用工具时，按问题自动推断写操作（支付/退款 + 订单号或最新订单）
         if (writeIntent(question) && !writeToolCalled && toolExecutor != null) {
             Map<String, Object> auto = toolExecutor.autoConfirm(question, userId);
@@ -146,7 +154,91 @@ public class AgentService {
         Map<String, Object> answer = new LinkedHashMap<>();
         answer.put("type", "answer");
         answer.put("content", "处理步骤较多，请稍后再试。");
+        answer.put("steps", steps);
+        answer.put("actions", buildActions(steps, question));
         return answer;
+    }
+
+    /** 生成一条执行步骤 */
+    private Map<String, Object> step(String tool, String status, String summary) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("tool", tool);
+        m.put("status", status);
+        m.put("summary", summary == null ? "" : (summary.length() > 60 ? summary.substring(0, 60) : summary));
+        return m;
+    }
+
+    /** 生成一条带参数的执行步骤（供动作映射提取 slotId 等） */
+    private Map<String, Object> stepWithParams(String tool, String status, String summary, Map<String, Object> params) {
+        Map<String, Object> m = step(tool, status, summary);
+        if (params != null && !params.isEmpty()) m.put("params", params);
+        return m;
+    }
+
+    /** 根据本次工具调用轨迹 + 用户问题，生成前端页面动作（确定性映射，不依赖模型发挥） */
+    private List<Map<String, Object>> buildActions(List<Map<String, Object>> steps, String question) {
+        List<Map<String, Object>> actions = new ArrayList<>();
+        Set<String> tools = new HashSet<>();
+        Long slotId = null;
+        Long policyId = null;
+        Integer qty = null;
+        for (Map<String, Object> s : steps) {
+            String t = String.valueOf(s.get("tool"));
+            tools.add(t);
+            if ("place_order".equals(t) && s.get("params") instanceof Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> p = (Map<String, Object>) s.get("params");
+                slotId = toLong(p.get("slotId"));
+                policyId = toLong(p.get("policyId"));
+                qty = toInt(p.get("quantity"));
+            }
+        }
+        boolean buyIntent = question != null
+            && (question.contains("买") || question.contains("下单") || question.contains("预约") || question.contains("购"));
+        if (tools.contains("get_my_orders")) {
+            actions.add(pageAction("goto_orders", null));
+        } else if (buyIntent && (tools.contains("get_policies") || tools.contains("get_slots") || tools.contains("place_order"))) {
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("spotId", 1);
+            if (slotId != null) payload.put("slotId", slotId);
+            if (policyId != null) payload.put("policyId", policyId);
+            if (qty != null) payload.put("quantity", qty);
+            actions.add(pageAction("open_ticket_form", payload));
+        } else {
+            // 仅定位/天气/浏览类意图才聚焦（避免纯查询打断用户当前页面）
+            boolean locateIntent = question != null && (question.contains("定位") || question.contains("找到")
+                || question.contains("在哪") || question.contains("地图") || question.contains("天气")
+                || question.contains("看看") || question.contains("去"));
+            String spot = detectSpot(question);
+            if (spot != null && locateIntent) {
+                Map<String, Object> payload = new LinkedHashMap<>();
+                payload.put("spot", spot);
+                actions.add(pageAction("focus_spot", payload));
+            }
+        }
+        return actions;
+    }
+
+    private Map<String, Object> pageAction(String op, Map<String, Object> payload) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("op", op);
+        m.put("payload", payload == null ? new LinkedHashMap<>() : payload);
+        return m;
+    }
+
+    /** 从问题里识别景点（目前支持故宫），返回 null 表示不聚焦 */
+    private String detectSpot(String q) {
+        if (q == null) return null;
+        if (q.contains("故宫")) return "故宫";
+        return null;
+    }
+
+    private Long toLong(Object o) {
+        try { return o == null ? null : Long.valueOf(String.valueOf(o)); } catch (Exception e) { return null; }
+    }
+
+    private Integer toInt(Object o) {
+        try { return o == null ? null : Integer.valueOf(String.valueOf(o)); } catch (Exception e) { return null; }
     }
 
     /** 判断用户问题是否表达“执行写操作”的意图（用于纠错：防止模型谎称完成） */
@@ -195,9 +287,15 @@ public class AgentService {
         String content = resp.path("message").path("content").asText("");
         if (content.isEmpty()) content = "操作已完成，请查看订单。";
         appendMemory(history, question, content);
+        List<Map<String, Object>> steps = new ArrayList<>();
+        steps.add(step(action, "done", result));
+        List<Map<String, Object>> actions = new ArrayList<>();
+        actions.add(pageAction("goto_orders", null));
         Map<String, Object> answer = new LinkedHashMap<>();
         answer.put("type", "answer");
         answer.put("content", content);
+        answer.put("steps", steps);
+        answer.put("actions", actions);
         return answer;
     }
 

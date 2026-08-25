@@ -104,10 +104,15 @@
     import { getWeatherBatch, getWeatherNow } from '@/api/weather'
     import TabBar from '@/components/web/TabBar.vue'
     import SearchPortal from '@/components/web/SearchPortal.vue'
+    import { useAgentStore } from '@/store/modules/agent'
 
     export default {
         name: 'Home',
         components: { TabBar, SearchPortal },
+        setup() {
+            const agentStore = useAgentStore()
+            return { agentStore }
+        },
         data() {
             return {
                 spots: [],
@@ -145,6 +150,8 @@
             await this.fetchSpots()
             this.fetchNotices()
             this.startNoticeRotation()
+            // 注册 3D 聚焦能力，供 AI 悬浮窗 focus_spot 动作调用
+            this.agentStore.registerSceneApi({ focusSpot: this.focusSpotByName })
             this.initScene()
             this.createBackground()
             this.createParticles()
@@ -318,7 +325,7 @@
             onPortalCat(type) {
                 const names = { hotel: '酒店', flight: '机票', ai: 'AI 助手' }
                 if (type === 'ai') {
-                    this.$router.push('/agent')
+                    this.agentStore.open()
                     return
                 }
                 alert('「' + (names[type] || '该') + '」模块建设中，敬请期待')
@@ -335,6 +342,25 @@
             focusOnPosition(targetPos) {
                 this.controls.target.copy(targetPos)
                 this.controls.update()
+            },
+
+            // AI 调度：把景点名聚焦到屏幕中心（复用搜索定位逻辑）
+            focusSpotByName(name) {
+                const kw = (name || '').trim()
+                if (!kw || !this.hotspots.length) return
+                const matched = this.hotspots.find(h =>
+                    (h.name || '').includes(kw) || (h.country || '').includes(kw) || (h.label || '').includes(kw))
+                if (!matched) return
+                const radius = 49.5
+                const phi = (90 - matched.lat) * Math.PI / 180
+                const theta = matched.lng * Math.PI / 180
+                const pos = new THREE.Vector3(
+                    radius * Math.sin(phi) * Math.cos(theta),
+                    radius * Math.cos(phi),
+                    radius * Math.sin(phi) * Math.sin(theta)
+                )
+                this.rotateViewToPosition(pos)
+                this.selectedName = matched.label || matched.name
             },
 
             // ====== 搜索定位：在原有视角下把目标旋转到屏幕正中心（不改动原定位方式） ======

@@ -53,6 +53,8 @@
         },
         mounted() {
             this.slotId = this.$route.query.slotId
+            const qq = parseInt(this.$route.query.quantity, 10)
+            if (qq > 0 && !isNaN(qq)) this.quantity = qq
             this.spotId = this.$route.query.spotId || ''
             if (!this.slotId) {
                 showToast('参数错误')
@@ -73,6 +75,7 @@
                         return
                     }
                     this.remaining = Math.max(0, (this.slotInfo.quota || 0) - (this.slotInfo.booked || 0))
+                    if (this.quantity > this.remaining && this.remaining > 0) this.quantity = this.remaining
                     this.price = this.slotInfo.price || 0
                     this.policyName = this.slotInfo.policyName || this.$route.query.policyName || '故宫门票'
                     this.spotName = this.$route.query.spotName || this.slotInfo.spotName || '景区'

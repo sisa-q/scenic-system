@@ -1,10 +1,14 @@
 <template>
   <router-view />
+  <AgentFloating />
 </template>
 
 <script>
+  import AgentFloating from '@/components/web/AgentFloating.vue'
+
   export default {
-    name: 'App'
+    name: 'App',
+    components: { AgentFloating }
   }
 </script>
 
