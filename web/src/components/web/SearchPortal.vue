@@ -20,9 +20,6 @@
             </div>
             <div class="nav-cats">
                 <span class="nav-cat" @click="$emit('go-spots')">景点门票</span>
-                <span class="nav-cat" @click="$emit('cat', 'hotel')">酒店</span>
-                <span class="nav-cat" @click="$emit('cat', 'flight')">机票</span>
-                <span class="nav-cat" @click="$emit('cat', 'ai')">AI 助手</span>
             </div>
         </div>
     </div>
