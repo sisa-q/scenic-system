@@ -73,7 +73,7 @@ services:
       MYSQL_DATABASE: digital_ticket
       MYSQL_USERNAME: scenic
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-REDACTED}
-      JWT_SECRET: ${JWT_SECRET:-REDACTED}
+      JWT_SECRET: ${JWT_SECRET:-please-set-JWT_SECRET-env}
       REDIS_HOST: redis
       REDIS_PORT: 6379
       QWEATHER_KEY: ${QWEATHER_KEY:-}

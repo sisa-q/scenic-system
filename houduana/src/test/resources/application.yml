@@ -18,5 +18,5 @@ spring:
 
 # JWT 配置（与主配置一致）
 jwt:
-  secret: REDACTED
+  secret: test-only-jwt-secret-0123456789abcdef
   expire: 86400000
