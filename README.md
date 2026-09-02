@@ -57,6 +57,23 @@
 - **订单状态机**：待支付 → 已支付 → 已核销 / 已退款 / 已失效 / 退款申请中，六态流转 + 支付超时自动失效
 - **多端交付**：Web（Vue3+Vant）+ PWA（可安装离线）+ 安卓 App（uni-app 壳）+ Docker Compose 一键部署
 
+## 🎓 大模型微调数据
+
+面向本地智能体整理并训练了 **127 条**景区业务指令数据（JSONL：instruction / input / output）：
+
+| 任务类型 | 条数 | 说明 |
+|---|---|---|
+| 意图分类 | 59 | 退款 / 查票 / 改期 / 闲聊 / FAQ |
+| 直接问答 | 32 | 真实景区问题 |
+| 业务咨询 | 12 | 退票 / 改期 / 预约规则 |
+| 票务信息回答 | 10 | 按票种 / 时段组织回答 |
+| 知识库问答 | 9 | 开放时间 / 交通 / 展馆 |
+| 寒暄 | 5 | 非业务友好回复 |
+
+- 📄 **完整逐条展示（127条）**：[docs/finetune-dataset.md](docs/finetune-dataset.md)
+- 📦 **原始数据 JSONL**：[docs/finetune/ticket_agent_train.jsonl](docs/finetune/ticket_agent_train.jsonl)
+- 微调采用 **QLoRA（4bit）**；因微调模型与工具调用的兼容性验证，最终由 base 模型承载工具链（完整工程取舍见论文第 6 章）
+
 ## 🛠 技术栈
 
 | 端 | 技术 |
