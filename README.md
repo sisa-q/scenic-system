@@ -1,6 +1,7 @@
 # 智慧景区票务与游客流量监测系统
 
-> 数字化文旅景区票务 + 游客流量实时监测 —— 全栈毕业设计（Spring Boot 3.5 + Vue 3 + Three.js + Redis + Docker）
+> **🚀 一个能跑、能演示、能答辩的智慧景区全栈方案：三维可视化 × 本地大模型智能体 × 高并发票务**
+> **Full-stack ticketing + Three.js 3D digital-twin + on-prem LLM agent (Qwen2.5-3B) · 126 tests green · Docker one-click**
 
 一个**真实可运行、可演示、带第三方支付闭环**的全栈系统：游客在 Web / PWA / 安卓 App 上选景点买票、支付宝支付、扫码核销入园；管理员在后台维护票务、实时查看客流数字孪生大屏。
 
