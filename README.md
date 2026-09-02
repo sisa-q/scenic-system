@@ -71,7 +71,7 @@
 | 寒暄 | 5 | 非业务友好回复 |
 
 - 📄 **完整逐条展示（127条）**：[docs/finetune-dataset.md](docs/finetune-dataset.md)
-- 📦 **原始数据 JSONL**：[docs/finetune/ticket_agent_train.jsonl](docs/finetune/ticket_agent_train.jsonl)
+- 📦 **原始数据 JSONL**：[docs/dataset/ticket_agent_train.jsonl](docs/dataset/ticket_agent_train.jsonl)
 - 微调采用 **QLoRA（4bit）**；因微调模型与工具调用的兼容性验证，最终由 base 模型承载工具链（完整工程取舍见论文第 6 章）
 
 ## 🛠 技术栈
