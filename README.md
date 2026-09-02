@@ -1,9 +1,33 @@
 # 智慧景区票务与游客流量监测系统
 
+<p align="center"><img src="docs/images/banner.png" alt="banner" width="820"></p>
+
+<p align="center">
+  <a href="https://github.com/sisa-q/scenic-system/actions"><img src="https://img.shields.io/badge/CI-GitHub%20Actions-2088FF" alt="CI"></a>
+  <img src="https://img.shields.io/badge/Spring%20Boot-3.5-6DB33F" alt="SpringBoot">
+  <img src="https://img.shields.io/badge/Vue-3-42B883" alt="Vue">
+  <img src="https://img.shields.io/badge/Three.js-0.185-000000" alt="Three.js">
+  <img src="https://img.shields.io/badge/Redis-7-DC382D" alt="Redis">
+  <img src="https://img.shields.io/badge/LLM-Qwen2.5--3B%20Local-6B4FA0" alt="LLM">
+  <img src="https://img.shields.io/badge/Tests-126%20passed-2EA44F" alt="Tests">
+</p>
+
+
 > **🚀 一个能跑、能演示、能答辩的智慧景区全栈方案：三维可视化 × 本地大模型智能体 × 高并发票务**
 > **Full-stack ticketing + Three.js 3D digital-twin + on-prem LLM agent (Qwen2.5-3B) · 126 tests green · Docker one-click**
 
 一个**真实可运行、可演示、带第三方支付闭环**的全栈系统：游客在 Web / PWA / 安卓 App 上选景点买票、支付宝支付、扫码核销入园；管理员在后台维护票务、实时查看客流数字孪生大屏。
+
+
+
+## 🏗 架构一览
+
+| 总体技术架构 | 多智能体协同 |
+|---|---|
+| ![总体技术架构](docs/images/tech-architecture.png) | ![多智能体协同](docs/images/agent-architecture.png) |
+
+![本地化部署架构](docs/images/deployment.png)
+
 
 ## ✨ 核心亮点
 
