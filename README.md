@@ -32,12 +32,18 @@
 ## 📸 界面预览
 
 <p align="center">
-  <img src="docs/screenshots/screenshot-1.png" width="49%" alt="界面预览 1">
-  <img src="docs/screenshots/screenshot-2.png" width="49%" alt="界面预览 2">
+  <img src="docs/screenshots/screenshot-1.png" width="31%" alt="界面预览">
+  <img src="docs/screenshots/screenshot-2.png" width="31%" alt="界面预览">
+  <img src="docs/screenshots/screenshot-4.png" width="31%" alt="界面预览">
+  <img src="docs/screenshots/preview-5.png" width="31%" alt="智能体流程">
+  <img src="docs/screenshots/preview-6.png" width="31%" alt="智能体流程">
+  <img src="docs/screenshots/preview-7.png" width="31%" alt="智能体流程">
+  <img src="docs/screenshots/preview-8.png" width="31%" alt="智能体流程">
+  <img src="docs/screenshots/preview-9.png" width="31%" alt="智能体流程">
+  <img src="docs/screenshots/preview-10.png" width="31%" alt="智能体流程">
 </p>
 <p align="center">
-  <img src="docs/screenshots/screenshot-3.jpg" width="30%" alt="界面预览 3">
-  <img src="docs/screenshots/screenshot-4.png" width="49%" alt="界面预览 4">
+  <img src="docs/screenshots/screenshot-3.jpg" width="20%" alt="移动端预览">
 </p>
 
 ## ✨ 核心亮点
