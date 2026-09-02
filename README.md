@@ -29,6 +29,17 @@
 ![本地化部署架构](docs/images/deployment.png)
 
 
+## 📸 界面预览
+
+<p align="center">
+  <img src="docs/screenshots/screenshot-1.png" width="49%" alt="界面预览 1">
+  <img src="docs/screenshots/screenshot-2.png" width="49%" alt="界面预览 2">
+</p>
+<p align="center">
+  <img src="docs/screenshots/screenshot-3.jpg" width="30%" alt="界面预览 3">
+  <img src="docs/screenshots/screenshot-4.png" width="49%" alt="界面预览 4">
+</p>
+
 ## ✨ 核心亮点
 
 - **支付宝沙箱真实支付**：自研 RSA2 签名/验签、异步回调幂等、金额校验、支付超时失效（`AlipaySigner`）
