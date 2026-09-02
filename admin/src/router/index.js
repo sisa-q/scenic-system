@@ -53,6 +53,11 @@ const routes = [
                 meta: { title: '知识库', icon: 'Reading' }
             },
             {
+                path: 'agent',
+                component: () => import('@/views/admin/AgentConsole.vue'),
+                meta: { title: 'AI 智能体', icon: 'Cpu' }
+            },
+            {
                 path: 'notice',
                 component: () => import('@/views/admin/NoticeManage.vue'),
                 meta: { title: '公告发布', icon: 'Notification' }

@@ -36,6 +36,9 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     // 累计有效订单数（已支付/已核销）
     long countByStatusGreaterThanEqual(Integer status);
 
+    // 待处理退款计数（已申请待退款）
+    long countByStatus(Integer status);
+
     // 某时段已支付订单数（用于库存校验）
     long countBySlotIdAndStatusIn(Long slotId, List<Integer> statuses);
 

@@ -39,3 +39,9 @@ application-local.yml
 
 # ===== 运行时日志 =====
 logs/
+
+# ===== public release additions (2026-09-02): keep local/dev artifacts out =====
+tools/
+settings-local.xml
+*.lnk
+finetune/

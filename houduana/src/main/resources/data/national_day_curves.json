@@ -1,0 +1,916 @@
+{
+ "capacity": 80000,
+ "generatedBy": "dataSimulator.js",
+ "days": [
+  {
+   "date": "2026-09-28",
+   "dayName": "周一",
+   "phase": "节前基线",
+   "totalEntries": 16000,
+   "totalOrders": 15600,
+   "peakInPark": 6163,
+   "amQuota": 44000,
+   "pmQuota": 36000,
+   "amBookedRatio": 0.4,
+   "pmBookedRatio": 0.3,
+   "refundRate": 0.02,
+   "weather": {
+    "text": "晴",
+    "temp": 24,
+    "rainProb": 0,
+    "windLevel": 2
+   },
+   "hourly": [
+    {
+     "hour": 8,
+     "entryRate": 12,
+     "hourlyTotal": 737,
+     "cumEntries": 211,
+     "inPark": 211
+    },
+    {
+     "hour": 9,
+     "entryRate": 31,
+     "hourlyTotal": 1836,
+     "cumEntries": 1610,
+     "inPark": 1609
+    },
+    {
+     "hour": 10,
+     "entryRate": 40,
+     "hourlyTotal": 2413,
+     "cumEntries": 3767,
+     "inPark": 3686
+    },
+    {
+     "hour": 11,
+     "entryRate": 36,
+     "hourlyTotal": 2170,
+     "cumEntries": 6178,
+     "inPark": 5612
+    },
+    {
+     "hour": 12,
+     "entryRate": 25,
+     "hourlyTotal": 1501,
+     "cumEntries": 7985,
+     "inPark": 6150
+    },
+    {
+     "hour": 13,
+     "entryRate": 21,
+     "hourlyTotal": 1258,
+     "cumEntries": 9325,
+     "inPark": 5517
+    },
+    {
+     "hour": 14,
+     "entryRate": 27,
+     "hourlyTotal": 1609,
+     "cumEntries": 10670,
+     "inPark": 4710
+    },
+    {
+     "hour": 15,
+     "entryRate": 37,
+     "hourlyTotal": 2219,
+     "cumEntries": 12617,
+     "inPark": 4811
+    },
+    {
+     "hour": 16,
+     "entryRate": 28,
+     "hourlyTotal": 1655,
+     "cumEntries": 14756,
+     "inPark": 5451
+    },
+    {
+     "hour": 17,
+     "entryRate": 10,
+     "hourlyTotal": 574,
+     "cumEntries": 15819,
+     "inPark": 4992
+    }
+   ]
+  },
+  {
+   "date": "2026-09-29",
+   "dayName": "周二",
+   "phase": "节前爬升",
+   "totalEntries": 18000,
+   "totalOrders": 17550,
+   "peakInPark": 6934,
+   "amQuota": 44000,
+   "pmQuota": 36000,
+   "amBookedRatio": 0.5,
+   "pmBookedRatio": 0.4,
+   "refundRate": 0.02,
+   "weather": {
+    "text": "多云",
+    "temp": 25,
+    "rainProb": 0,
+    "windLevel": 2
+   },
+   "hourly": [
+    {
+     "hour": 8,
+     "entryRate": 14,
+     "hourlyTotal": 829,
+     "cumEntries": 238,
+     "inPark": 238
+    },
+    {
+     "hour": 9,
+     "entryRate": 34,
+     "hourlyTotal": 2066,
+     "cumEntries": 1811,
+     "inPark": 1810
+    },
+    {
+     "hour": 10,
+     "entryRate": 45,
+     "hourlyTotal": 2715,
+     "cumEntries": 4237,
+     "inPark": 4147
+    },
+    {
+     "hour": 11,
+     "entryRate": 41,
+     "hourlyTotal": 2441,
+     "cumEntries": 6950,
+     "inPark": 6313
+    },
+    {
+     "hour": 12,
+     "entryRate": 28,
+     "hourlyTotal": 1689,
+     "cumEntries": 8983,
+     "inPark": 6919
+    },
+    {
+     "hour": 13,
+     "entryRate": 24,
+     "hourlyTotal": 1415,
+     "cumEntries": 10490,
+     "inPark": 6207
+    },
+    {
+     "hour": 14,
+     "entryRate": 30,
+     "hourlyTotal": 1810,
+     "cumEntries": 12004,
+     "inPark": 5298
+    },
+    {
+     "hour": 15,
+     "entryRate": 42,
+     "hourlyTotal": 2496,
+     "cumEntries": 14194,
+     "inPark": 5413
+    },
+    {
+     "hour": 16,
+     "entryRate": 31,
+     "hourlyTotal": 1862,
+     "cumEntries": 16601,
+     "inPark": 6132
+    },
+    {
+     "hour": 17,
+     "entryRate": 11,
+     "hourlyTotal": 645,
+     "cumEntries": 17797,
+     "inPark": 5616
+    }
+   ]
+  },
+  {
+   "date": "2026-09-30",
+   "dayName": "周三",
+   "phase": "节前预售峰值",
+   "totalEntries": 32000,
+   "totalOrders": 31200,
+   "peakInPark": 12327,
+   "amQuota": 44000,
+   "pmQuota": 36000,
+   "amBookedRatio": 0.85,
+   "pmBookedRatio": 0.6,
+   "refundRate": 0.02,
+   "weather": {
+    "text": "晴",
+    "temp": 26,
+    "rainProb": 0,
+    "windLevel": 2
+   },
+   "hourly": [
+    {
+     "hour": 8,
+     "entryRate": 25,
+     "hourlyTotal": 1474,
+     "cumEntries": 423,
+     "inPark": 423
+    },
+    {
+     "hour": 9,
+     "entryRate": 61,
+     "hourlyTotal": 3672,
+     "cumEntries": 3220,
+     "inPark": 3217
+    },
+    {
+     "hour": 10,
+     "entryRate": 80,
+     "hourlyTotal": 4827,
+     "cumEntries": 7533,
+     "inPark": 7372
+    },
+    {
+     "hour": 11,
+     "entryRate": 72,
+     "hourlyTotal": 4339,
+     "cumEntries": 12356,
+     "inPark": 11223
+    },
+    {
+     "hour": 12,
+     "entryRate": 50,
+     "hourlyTotal": 3003,
+     "cumEntries": 15970,
+     "inPark": 12300
+    },
+    {
+     "hour": 13,
+     "entryRate": 42,
+     "hourlyTotal": 2516,
+     "cumEntries": 18650,
+     "inPark": 11035
+    },
+    {
+     "hour": 14,
+     "entryRate": 54,
+     "hourlyTotal": 3217,
+     "cumEntries": 21340,
+     "inPark": 9419
+    },
+    {
+     "hour": 15,
+     "entryRate": 74,
+     "hourlyTotal": 4437,
+     "cumEntries": 25234,
+     "inPark": 9622
+    },
+    {
+     "hour": 16,
+     "entryRate": 55,
+     "hourlyTotal": 3309,
+     "cumEntries": 29512,
+     "inPark": 10902
+    },
+    {
+     "hour": 17,
+     "entryRate": 19,
+     "hourlyTotal": 1147,
+     "cumEntries": 31639,
+     "inPark": 9984
+    }
+   ]
+  },
+  {
+   "date": "2026-10-01",
+   "dayName": "周四",
+   "phase": "假期首日",
+   "totalEntries": 52000,
+   "totalOrders": 50700,
+   "peakInPark": 20031,
+   "amQuota": 44000,
+   "pmQuota": 36000,
+   "amBookedRatio": 1,
+   "pmBookedRatio": 0.8,
+   "refundRate": 0.02,
+   "weather": {
+    "text": "多云转晴",
+    "temp": 27,
+    "rainProb": 0,
+    "windLevel": 2
+   },
+   "hourly": [
+    {
+     "hour": 8,
+     "entryRate": 40,
+     "hourlyTotal": 2395,
+     "cumEntries": 687,
+     "inPark": 687
+    },
+    {
+     "hour": 9,
+     "entryRate": 99,
+     "hourlyTotal": 5967,
+     "cumEntries": 5232,
+     "inPark": 5228
+    },
+    {
+     "hour": 10,
+     "entryRate": 131,
+     "hourlyTotal": 7843,
+     "cumEntries": 12241,
+     "inPark": 11980
+    },
+    {
+     "hour": 11,
+     "entryRate": 118,
+     "hourlyTotal": 7051,
+     "cumEntries": 20079,
+     "inPark": 18238
+    },
+    {
+     "hour": 12,
+     "entryRate": 81,
+     "hourlyTotal": 4880,
+     "cumEntries": 25952,
+     "inPark": 19987
+    },
+    {
+     "hour": 13,
+     "entryRate": 68,
+     "hourlyTotal": 4088,
+     "cumEntries": 30306,
+     "inPark": 17931
+    },
+    {
+     "hour": 14,
+     "entryRate": 87,
+     "hourlyTotal": 5228,
+     "cumEntries": 34677,
+     "inPark": 15306
+    },
+    {
+     "hour": 15,
+     "entryRate": 120,
+     "hourlyTotal": 7211,
+     "cumEntries": 41005,
+     "inPark": 15636
+    },
+    {
+     "hour": 16,
+     "entryRate": 90,
+     "hourlyTotal": 5378,
+     "cumEntries": 47957,
+     "inPark": 17716
+    },
+    {
+     "hour": 17,
+     "entryRate": 31,
+     "hourlyTotal": 1864,
+     "cumEntries": 51413,
+     "inPark": 16224
+    }
+   ]
+  },
+  {
+   "date": "2026-10-02",
+   "dayName": "周五",
+   "phase": "假期高位",
+   "totalEntries": 66000,
+   "totalOrders": 64350,
+   "peakInPark": 25424,
+   "amQuota": 44000,
+   "pmQuota": 36000,
+   "amBookedRatio": 0.92,
+   "pmBookedRatio": 0.78,
+   "refundRate": 0.08,
+   "weather": {
+    "text": "中雨",
+    "temp": 20,
+    "rainProb": 75,
+    "windLevel": 3
+   },
+   "hourly": [
+    {
+     "hour": 8,
+     "entryRate": 51,
+     "hourlyTotal": 3040,
+     "cumEntries": 872,
+     "inPark": 872
+    },
+    {
+     "hour": 9,
+     "entryRate": 126,
+     "hourlyTotal": 7574,
+     "cumEntries": 6640,
+     "inPark": 6635
+    },
+    {
+     "hour": 10,
+     "entryRate": 166,
+     "hourlyTotal": 9955,
+     "cumEntries": 15537,
+     "inPark": 15206
+    },
+    {
+     "hour": 11,
+     "entryRate": 149,
+     "hourlyTotal": 8950,
+     "cumEntries": 25484,
+     "inPark": 23148
+    },
+    {
+     "hour": 12,
+     "entryRate": 103,
+     "hourlyTotal": 6194,
+     "cumEntries": 32939,
+     "inPark": 25369
+    },
+    {
+     "hour": 13,
+     "entryRate": 86,
+     "hourlyTotal": 5189,
+     "cumEntries": 38465,
+     "inPark": 22759
+    },
+    {
+     "hour": 14,
+     "entryRate": 111,
+     "hourlyTotal": 6636,
+     "cumEntries": 44013,
+     "inPark": 19427
+    },
+    {
+     "hour": 15,
+     "entryRate": 153,
+     "hourlyTotal": 9152,
+     "cumEntries": 52045,
+     "inPark": 19846
+    },
+    {
+     "hour": 16,
+     "entryRate": 114,
+     "hourlyTotal": 6826,
+     "cumEntries": 60869,
+     "inPark": 22485
+    },
+    {
+     "hour": 17,
+     "entryRate": 39,
+     "hourlyTotal": 2366,
+     "cumEntries": 65255,
+     "inPark": 20591
+    }
+   ]
+  },
+  {
+   "date": "2026-10-03",
+   "dayName": "周六",
+   "phase": "假期峰值",
+   "totalEntries": 74000,
+   "totalOrders": 72150,
+   "peakInPark": 28505,
+   "amQuota": 44000,
+   "pmQuota": 36000,
+   "amBookedRatio": 1,
+   "pmBookedRatio": 0.88,
+   "refundRate": 0.03,
+   "weather": {
+    "text": "晴",
+    "temp": 34,
+    "rainProb": 0,
+    "windLevel": 2
+   },
+   "hourly": [
+    {
+     "hour": 8,
+     "entryRate": 57,
+     "hourlyTotal": 3408,
+     "cumEntries": 977,
+     "inPark": 977
+    },
+    {
+     "hour": 9,
+     "entryRate": 142,
+     "hourlyTotal": 8492,
+     "cumEntries": 7445,
+     "inPark": 7439
+    },
+    {
+     "hour": 10,
+     "entryRate": 186,
+     "hourlyTotal": 11161,
+     "cumEntries": 17421,
+     "inPark": 17049
+    },
+    {
+     "hour": 11,
+     "entryRate": 167,
+     "hourlyTotal": 10035,
+     "cumEntries": 28573,
+     "inPark": 25954
+    },
+    {
+     "hour": 12,
+     "entryRate": 116,
+     "hourlyTotal": 6944,
+     "cumEntries": 36932,
+     "inPark": 28444
+    },
+    {
+     "hour": 13,
+     "entryRate": 97,
+     "hourlyTotal": 5818,
+     "cumEntries": 43127,
+     "inPark": 25518
+    },
+    {
+     "hour": 14,
+     "entryRate": 124,
+     "hourlyTotal": 7440,
+     "cumEntries": 49348,
+     "inPark": 21781
+    },
+    {
+     "hour": 15,
+     "entryRate": 171,
+     "hourlyTotal": 10261,
+     "cumEntries": 58354,
+     "inPark": 22252
+    },
+    {
+     "hour": 16,
+     "entryRate": 128,
+     "hourlyTotal": 7653,
+     "cumEntries": 68247,
+     "inPark": 25211
+    },
+    {
+     "hour": 17,
+     "entryRate": 44,
+     "hourlyTotal": 2653,
+     "cumEntries": 73164,
+     "inPark": 23087
+    }
+   ]
+  },
+  {
+   "date": "2026-10-04",
+   "dayName": "周日",
+   "phase": "高位回落",
+   "totalEntries": 60000,
+   "totalOrders": 58500,
+   "peakInPark": 23112,
+   "amQuota": 44000,
+   "pmQuota": 36000,
+   "amBookedRatio": 0.95,
+   "pmBookedRatio": 0.6,
+   "refundRate": 0.02,
+   "weather": {
+    "text": "多云",
+    "temp": 28,
+    "rainProb": 0,
+    "windLevel": 2
+   },
+   "hourly": [
+    {
+     "hour": 8,
+     "entryRate": 46,
+     "hourlyTotal": 2763,
+     "cumEntries": 792,
+     "inPark": 792
+    },
+    {
+     "hour": 9,
+     "entryRate": 115,
+     "hourlyTotal": 6885,
+     "cumEntries": 6037,
+     "inPark": 6032
+    },
+    {
+     "hour": 10,
+     "entryRate": 151,
+     "hourlyTotal": 9050,
+     "cumEntries": 14125,
+     "inPark": 13823
+    },
+    {
+     "hour": 11,
+     "entryRate": 136,
+     "hourlyTotal": 8136,
+     "cumEntries": 23168,
+     "inPark": 21044
+    },
+    {
+     "hour": 12,
+     "entryRate": 94,
+     "hourlyTotal": 5631,
+     "cumEntries": 29945,
+     "inPark": 23062
+    },
+    {
+     "hour": 13,
+     "entryRate": 79,
+     "hourlyTotal": 4717,
+     "cumEntries": 34968,
+     "inPark": 20690
+    },
+    {
+     "hour": 14,
+     "entryRate": 101,
+     "hourlyTotal": 6033,
+     "cumEntries": 40012,
+     "inPark": 17661
+    },
+    {
+     "hour": 15,
+     "entryRate": 139,
+     "hourlyTotal": 8320,
+     "cumEntries": 47314,
+     "inPark": 18042
+    },
+    {
+     "hour": 16,
+     "entryRate": 103,
+     "hourlyTotal": 6205,
+     "cumEntries": 55335,
+     "inPark": 20441
+    },
+    {
+     "hour": 17,
+     "entryRate": 36,
+     "hourlyTotal": 2151,
+     "cumEntries": 59322,
+     "inPark": 18719
+    }
+   ]
+  },
+  {
+   "date": "2026-10-05",
+   "dayName": "周一",
+   "phase": "返程前",
+   "totalEntries": 54000,
+   "totalOrders": 52650,
+   "peakInPark": 20801,
+   "amQuota": 44000,
+   "pmQuota": 36000,
+   "amBookedRatio": 0.8,
+   "pmBookedRatio": 0.55,
+   "refundRate": 0.02,
+   "weather": {
+    "text": "晴",
+    "temp": 26,
+    "rainProb": 0,
+    "windLevel": 2
+   },
+   "hourly": [
+    {
+     "hour": 8,
+     "entryRate": 41,
+     "hourlyTotal": 2487,
+     "cumEntries": 713,
+     "inPark": 713
+    },
+    {
+     "hour": 9,
+     "entryRate": 103,
+     "hourlyTotal": 6197,
+     "cumEntries": 5433,
+     "inPark": 5429
+    },
+    {
+     "hour": 10,
+     "entryRate": 136,
+     "hourlyTotal": 8145,
+     "cumEntries": 12712,
+     "inPark": 12441
+    },
+    {
+     "hour": 11,
+     "entryRate": 122,
+     "hourlyTotal": 7323,
+     "cumEntries": 20851,
+     "inPark": 18939
+    },
+    {
+     "hour": 12,
+     "entryRate": 84,
+     "hourlyTotal": 5067,
+     "cumEntries": 26950,
+     "inPark": 20756
+    },
+    {
+     "hour": 13,
+     "entryRate": 71,
+     "hourlyTotal": 4245,
+     "cumEntries": 31471,
+     "inPark": 18621
+    },
+    {
+     "hour": 14,
+     "entryRate": 90,
+     "hourlyTotal": 5429,
+     "cumEntries": 36011,
+     "inPark": 15895
+    },
+    {
+     "hour": 15,
+     "entryRate": 125,
+     "hourlyTotal": 7488,
+     "cumEntries": 42583,
+     "inPark": 16238
+    },
+    {
+     "hour": 16,
+     "entryRate": 93,
+     "hourlyTotal": 5585,
+     "cumEntries": 49802,
+     "inPark": 18397
+    },
+    {
+     "hour": 17,
+     "entryRate": 32,
+     "hourlyTotal": 1936,
+     "cumEntries": 53390,
+     "inPark": 16848
+    }
+   ]
+  },
+  {
+   "date": "2026-10-06",
+   "dayName": "周二",
+   "phase": "返程",
+   "totalEntries": 38000,
+   "totalOrders": 37050,
+   "peakInPark": 14638,
+   "amQuota": 44000,
+   "pmQuota": 36000,
+   "amBookedRatio": 0.6,
+   "pmBookedRatio": 0.4,
+   "refundRate": 0.02,
+   "weather": {
+    "text": "晴",
+    "temp": 24,
+    "rainProb": 0,
+    "windLevel": 2
+   },
+   "hourly": [
+    {
+     "hour": 8,
+     "entryRate": 29,
+     "hourlyTotal": 1750,
+     "cumEntries": 502,
+     "inPark": 502
+    },
+    {
+     "hour": 9,
+     "entryRate": 73,
+     "hourlyTotal": 4361,
+     "cumEntries": 3823,
+     "inPark": 3820
+    },
+    {
+     "hour": 10,
+     "entryRate": 96,
+     "hourlyTotal": 5732,
+     "cumEntries": 8946,
+     "inPark": 8755
+    },
+    {
+     "hour": 11,
+     "entryRate": 86,
+     "hourlyTotal": 5153,
+     "cumEntries": 14673,
+     "inPark": 13328
+    },
+    {
+     "hour": 12,
+     "entryRate": 59,
+     "hourlyTotal": 3566,
+     "cumEntries": 18965,
+     "inPark": 14606
+    },
+    {
+     "hour": 13,
+     "entryRate": 50,
+     "hourlyTotal": 2987,
+     "cumEntries": 22146,
+     "inPark": 13104
+    },
+    {
+     "hour": 14,
+     "entryRate": 64,
+     "hourlyTotal": 3821,
+     "cumEntries": 25341,
+     "inPark": 11185
+    },
+    {
+     "hour": 15,
+     "entryRate": 88,
+     "hourlyTotal": 5269,
+     "cumEntries": 29966,
+     "inPark": 11427
+    },
+    {
+     "hour": 16,
+     "entryRate": 65,
+     "hourlyTotal": 3930,
+     "cumEntries": 35046,
+     "inPark": 12946
+    },
+    {
+     "hour": 17,
+     "entryRate": 23,
+     "hourlyTotal": 1362,
+     "cumEntries": 37571,
+     "inPark": 11856
+    }
+   ]
+  },
+  {
+   "date": "2026-10-07",
+   "dayName": "周三",
+   "phase": "假期尾声",
+   "totalEntries": 26000,
+   "totalOrders": 25350,
+   "peakInPark": 10015,
+   "amQuota": 44000,
+   "pmQuota": 36000,
+   "amBookedRatio": 0.5,
+   "pmBookedRatio": 0.3,
+   "refundRate": 0.02,
+   "weather": {
+    "text": "多云转阴",
+    "temp": 22,
+    "rainProb": 20,
+    "windLevel": 4
+   },
+   "hourly": [
+    {
+     "hour": 8,
+     "entryRate": 20,
+     "hourlyTotal": 1197,
+     "cumEntries": 343,
+     "inPark": 343
+    },
+    {
+     "hour": 9,
+     "entryRate": 50,
+     "hourlyTotal": 2984,
+     "cumEntries": 2616,
+     "inPark": 2614
+    },
+    {
+     "hour": 10,
+     "entryRate": 65,
+     "hourlyTotal": 3922,
+     "cumEntries": 6121,
+     "inPark": 5990
+    },
+    {
+     "hour": 11,
+     "entryRate": 59,
+     "hourlyTotal": 3526,
+     "cumEntries": 10039,
+     "inPark": 9119
+    },
+    {
+     "hour": 12,
+     "entryRate": 41,
+     "hourlyTotal": 2440,
+     "cumEntries": 12976,
+     "inPark": 9994
+    },
+    {
+     "hour": 13,
+     "entryRate": 34,
+     "hourlyTotal": 2044,
+     "cumEntries": 15153,
+     "inPark": 8966
+    },
+    {
+     "hour": 14,
+     "entryRate": 44,
+     "hourlyTotal": 2614,
+     "cumEntries": 17339,
+     "inPark": 7653
+    },
+    {
+     "hour": 15,
+     "entryRate": 60,
+     "hourlyTotal": 3605,
+     "cumEntries": 20503,
+     "inPark": 7818
+    },
+    {
+     "hour": 16,
+     "entryRate": 45,
+     "hourlyTotal": 2689,
+     "cumEntries": 23979,
+     "inPark": 8858
+    },
+    {
+     "hour": 17,
+     "entryRate": 16,
+     "hourlyTotal": 932,
+     "cumEntries": 25706,
+     "inPark": 8112
+    }
+   ]
+  }
+ ]
+}

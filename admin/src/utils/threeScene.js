@@ -35,7 +35,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { SSAARenderPass } from 'three/examples/jsm/postprocessing/SSAARenderPass.js'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js'
-import { TimeController, GUGONG_LAYOUT, HOTSPOTS, SimulationEngine, SIM_CONFIG } from './dataSimulator.js'
+import { TimeController, GUGONG_LAYOUT, HOTSPOTS, SimulationEngine, SIM_CONFIG, intensityOf, colorTOf, columnHeightOf, speedOf, spawnParticle, stepParticleBound, PARTICLE_BOUNDS } from './dataSimulator.js'
 import { initCrowdInteraction } from './crowdInteraction.js'
 import { getRealTime, getFlowStats } from '@/api/flow'
 
@@ -203,6 +203,12 @@ let statPeak = null
 let statBars = null
 let timeDragging = false
 let speedFactor = 1
+let FIELD_CAL_MAX = 1          // 密度场全局标定上限（满承载峰值场值 × 剧本最大强度）
+let timeDayLabel = null        // 时间条日期/阶段标签
+let particleExitCount = 0   // 神武门出口累计离开粒子数（诊断）
+let pWander = null           // 每粒子游荡者标记：0=主流 / 1=游荡(北流弱、横向扩散大)
+let timeDayPrev = null
+let timeDayNext = null
 const UP_VEC = new THREE.Vector3(0, 1, 0)
 let densityLabels = []
 let arrowMesh = null
@@ -272,7 +278,7 @@ function smoothHotspotFlow(h, hour) {
 }
 
 // 重建密度场（双数据源：热点高斯场 + 中轴通道人流 + 平滑时段扰动）
-function buildDensityField(nx, nz, hour) {
+function buildDensityField(nx, nz, hour, intensity = 1) {
     const f = new Float32Array(nx * nz)
     const flows = {}
     for (let k = 0; k < HOTSPOTS.length; k++) {
@@ -295,10 +301,37 @@ function buildDensityField(nx, nz, hour) {
             v += 6 * Math.exp(-(wx * wx) / (2 * 1.6)) * (0.6 + 0.4 * Math.sin(hour * 1.1 + 0.5))
             // 时段迁移的平滑扰动（模拟客流缓慢漂移）
             v *= 0.9 + 0.1 * Math.sin(wx * 0.7 + hour * 1.3) * Math.cos(wz * 0.6 - hour * 0.8)
-            f[j * nx + i] = Math.max(0, v)
+            f[j * nx + i] = Math.max(0, v * intensity)
         }
     }
     return f
+}
+
+// 全局标定上限：参考场(峰值时刻 11 点, 强度 1) × 剧本最大强度 → 与模拟数据绝对量级对接
+function computeCalMax() {
+    const ref = buildDensityField(CONFIG.contourSize, CONFIG.contourSize, 11, 1)
+    let m = 0
+    for (let i = 0; i < ref.length; i++) if (ref[i] > m) m = ref[i]
+    let imax = 0
+    if (simEngine) {
+        for (let d = 0; d < simEngine.dayCount; d++) {
+            const it = intensityOf(simEngine.getSummary(d).peakInPark, SIM_CONFIG.capacity)
+            if (it > imax) imax = it
+        }
+    }
+    FIELD_CAL_MAX = Math.max(1e-6, m * Math.max(imax, 1e-6))
+}
+
+// 当前全局强度：sim 用模拟在园，real 用后端实时在园（两者数值一致则视觉一致）
+function currentIntensity() {
+    if (dataSource === 'real' && realFlow && realFlow.currentVisitors != null) {
+        return intensityOf(realFlow.currentVisitors, SIM_CONFIG.capacity)
+    }
+    if (simEngine && timeController) {
+        const st = simEngine.getStateAt(timeController.getCurrentDay(), timeController.getCurrentHour())
+        return intensityOf(st.inPark, SIM_CONFIG.capacity)
+    }
+    return 0
 }
 
 // 双线性插值采样
@@ -347,8 +380,8 @@ function updateHeatmap() {
         const wx = posAttr.getX(vi)
         const wz = posAttr.getZ(vi)
         const v = sampleField(wx, wz)
-        // 实时引擎：密度强度随真实在园人数缩放（模拟模式 realScale=1 不影响原效果）
-        const t = vSpan > 1e-6 ? ((v - vMin) / vSpan) * realScale : 0
+        // 全局标定：热力色阶与模拟数据(在园人数)严格对接，不再每帧归一化
+        const t = colorTOf(v, FIELD_CAL_MAX)
         // 32 级密度梯度离散化
         const tq = Math.round(Math.max(0, Math.min(1, t)) * (CONFIG.contourLevels - 1)) / (CONFIG.contourLevels - 1)
         flowColor(tq, tmpColor)
@@ -405,8 +438,8 @@ function rebuildContours() {
     const stepZ = FIELD_H / (n - 1)
     const total = CONFIG.contourLevels
     for (let li = 0; li < total; li += CONFIG.contourStride) {
-        // 实时引擎：等值线阈值随真实在园人数缩放
-        const L = vMin + (li / (total - 1)) * vSpan / realScale
+        // 全局标定：等值线阈值随模拟数据量级变化（低承载日线条少，峰值日线条多）
+        const L = (li / (total - 1)) * FIELD_CAL_MAX
         const tq = li / (total - 1)
         flowColor(tq, tmpColor)
         const r = tmpColor.r, g = tmpColor.g, b = tmpColor.b
@@ -589,16 +622,17 @@ export function initScene(containerElement) {
     initDeltaSync()
 
     simEngine = new SimulationEngine()
+    computeCalMax()
     lastFrameTime = performance.now()
-    timeController = new TimeController(SIM_CONFIG.openHour, (SIM_CONFIG.closeHour - SIM_CONFIG.openHour) / SIM_CONFIG.playSeconds)
-    timeController.onTick((hour) => {
+    timeController = new TimeController(SIM_CONFIG.openHour, (SIM_CONFIG.closeHour - SIM_CONFIG.openHour) / SIM_CONFIG.playSeconds, simEngine.dayCount)
+    timeController.onTick((dayIndex, hour) => {
         const now = performance.now()
         const dt = Math.min(0.05, (now - lastFrameTime) / 1000)
         lastFrameTime = now
-        updateScene(hour, dt)
+        updateScene(dayIndex, hour, dt)
     })
     timeController.start()
-    updateScene(8, 0.016)
+    updateScene(0, 8, 0.016)
 
     createHUD()
     createLegend()
@@ -1037,11 +1071,11 @@ function updateColumns(now, dt) {
     const white = tmpColor2.set(0xffffff)
     const amber = tmpColor3.set(0xffb300)
     columns.forEach((c) => {
-        // 实时引擎：柱体采样密度随真实在园人数缩放（高度/告警实时变化）
-        const d = sampleField(c.x, c.z) * realScale
+        // 数据驱动：柱体采样密度直接来自密度场（已含在园强度），高度随模拟数据变化
+        const d = sampleField(c.x, c.z)
         c.samples.push(d)
         if (c.samples.length > CONFIG.columnRingSize) c.samples.shift()
-        c.height = 0.15 + (d / Math.max(1e-5, vMax)) * 0.8
+        c.height = columnHeightOf(d, FIELD_CAL_MAX)
 
         // IQR 异常检测（Time Slicing：每 3 帧重算一次统计量）
         if (frameCounter % 3 === 0 && c.samples.length >= 60) {
@@ -1104,43 +1138,7 @@ const SPURS = [
     [{ x: 0, z: 2.0 }, { x: -2.5, z: 1.5 }],
     [{ x: 0, z: 2.0 }, { x: 2.5, z: 1.5 }],
 ]
-let PATH_SAMPLES = null
-
-function buildPathSamples() {
-    if (PATH_SAMPLES) return
-    PATH_SAMPLES = []
-    const axisSamples = []
-    for (let k = 0; k < AXIS_PATH.length - 1; k++) {
-        const a = AXIS_PATH[k], b = AXIS_PATH[k + 1]
-        const dist = Math.hypot(b.x - a.x, b.z - a.z)
-        const steps = Math.max(1, Math.ceil(dist / 0.2))
-        for (let s = 0; s <= steps; s++) {
-            const t = s / steps
-            axisSamples.push({
-                x: a.x + (b.x - a.x) * t,
-                z: a.z + (b.z - a.z) * t,
-                tx: (b.x - a.x) / dist,
-                tz: (b.z - a.z) / dist,
-                strength: 1,
-            })
-        }
-    }
-    PATH_SAMPLES = axisSamples.slice()
-    SPURS.forEach(([a, b]) => {
-        const dist = Math.hypot(b.x - a.x, b.z - a.z)
-        const steps = Math.max(1, Math.ceil(dist / 0.25))
-        for (let s = 0; s <= steps; s++) {
-            const t = s / steps
-            PATH_SAMPLES.push({
-                x: a.x + (b.x - a.x) * t,
-                z: a.z + (b.z - a.z) * t,
-                tx: (b.x - a.x) / dist,
-                tz: (b.z - a.z) / dist,
-                strength: 0.45,
-            })
-        }
-    })
-}
+// （路径采样已由对流-扩散速度场取代；AXIS_PATH/SPURS 保留供布局参考）
 
 // 密度 → 目标速度映射（畅行/正常/缓行/停滞，单位 m/s）
 // 密度 <8 畅行(>1.2) / 8-25 正常(0.6-1.2) / 25-55 缓行(0.2-0.6) / >55 停滞(<0.2)
@@ -1164,39 +1162,39 @@ function congestionSpeed(density) {
 // 速度场（拉格朗日视角）：方向来自 主轴层流 + 密度梯度扩散 + 湍流旋度，
 // 速度大小由密度映射为目标速度，保证畅行/正常/缓行/停滞四态同时呈现
 function velocityFieldAt(x, z, hour) {
-    buildPathSamples()
     const density = sampleField(x, z)
-    // 1) 主轴层流牵引（方向）
-    let bestD2 = Infinity, btx = 0, btz = 1, bstr = 0
-    for (let k = 0; k < PATH_SAMPLES.length; k++) {
-        const p = PATH_SAMPLES[k]
-        const dx = x - p.x, dz = z - p.z
-        const d2 = dx * dx + dz * dz
-        if (d2 < bestD2) {
-            bestD2 = d2
-            btx = p.tx
-            btz = p.tz
-            bstr = p.strength
-        }
-    }
-    const pathStrength = Math.exp(-bestD2 / (2 * 1.1 * 1.1)) * bstr
-    // 2) 密度梯度扩散（-∇f，从拥挤流向空旷）
+    // 对流-扩散场：北向主流（中轴带略强）+ 固定湍流 + 密度疏解 + 墙避让 + 北墙漏斗
+    // 游客总体从午门进、神武门出；横向游走由 updateParticles 的位置级随机扩散提供
+    const axis = Math.exp(-(x * x) / (2 * 1.8 * 1.8))
+    const t = hour * 1.0
+    const swx = Math.sin(x * 1.2 + t * 0.7) * Math.cos(z * 0.9 - t * 0.5)
+    const swz = Math.cos(x * 0.8 - t * 0.6) * Math.sin(z * 1.3 + t * 0.4)
+    let dx = swx * 0.12
+    let dz = 0.45 + 0.08 * axis + swz * 0.12
+    // 密度：横向轻微疏解（拥挤向外散，主要靠 speedOf 降速形成聚集）
     const EPS = 0.08
     const gx = (sampleField(x + EPS, z) - sampleField(x - EPS, z)) / (2 * EPS)
     const gz = (sampleField(x, z + EPS) - sampleField(x, z - EPS)) / (2 * EPS)
     const glen = Math.hypot(gx, gz) || 0
-    // 3) 湍流旋度噪声（层流与湍流交织）
-    const t = hour * 1.0
-    const swx = Math.sin(x * 1.2 + t * 0.7) * Math.cos(z * 0.9 - t * 0.5)
-    const swz = Math.cos(x * 0.8 - t * 0.6) * Math.sin(z * 1.3 + t * 0.4)
-    // 合成方向（层流牵引为主，辅以梯度扩散与旋度湍流）
-    let dx = btx * pathStrength * 0.7 - (glen > 1e-4 ? (gx / glen) * 0.4 : 0) + swx * 0.25
-    let dz = btz * pathStrength * 0.7 - (glen > 1e-4 ? (gz / glen) * 0.4 : 0) + swz * 0.25
+    if (glen > 1e-4) { dx -= (gx / glen) * 0.10; dz -= (gz / glen) * 0.10 }
+    // 北墙漏斗：靠近北墙时向门洞(x=0)收拢，保证从神武门出口离开
+    const northZone = Math.max(0, Math.min(1, (PARTICLE_BOUNDS.zMax - z) / 1.3))
+    if (northZone > 0 && Math.abs(x) > 0.3) dx += (-Math.sign(x)) * northZone * 0.6
+    // 墙壁避让（弱；硬约束已保证不越墙；南北门洞内不避让）
+    const inGate = Math.abs(x) <= PARTICLE_BOUNDS.gateHalf
+    const AVOID = 1.0, AW = 0.4
+    let avx = 0, avz = 0
+    if (x - PARTICLE_BOUNDS.xMin < AVOID) avx += (AVOID - (x - PARTICLE_BOUNDS.xMin)) / AVOID
+    if (PARTICLE_BOUNDS.xMax - x < AVOID) avx -= (AVOID - (PARTICLE_BOUNDS.xMax - x)) / AVOID
+    if (!inGate && z - PARTICLE_BOUNDS.zMin < AVOID) avz += (AVOID - (z - PARTICLE_BOUNDS.zMin)) / AVOID
+    if (!inGate && PARTICLE_BOUNDS.zMax - z < AVOID) avz -= (AVOID - (PARTICLE_BOUNDS.zMax - z)) / AVOID
+    dx += avx * AW
+    dz += avz * AW
     const dl = Math.hypot(dx, dz) || 1
     dx /= dl
     dz /= dl
-    // 速度大小：密度 → 目标速度（四态同时呈现）
-    const spd = congestionSpeed(density)
+    // 速度大小：密度(已含在园强度) → 目标速度（四态同时呈现，与模拟数据对接）
+    const spd = speedOf(density, FIELD_CAL_MAX)
     return { vx: dx * spd, vz: dz * spd }
 }
 
@@ -1209,13 +1207,30 @@ function speedColor(speedMs, out) {
     return out
 }
 
+// 统一从午门（南门）入口进入；北门（神武门）为唯一出口（到达后回到入口重生）
 function respawnParticle(i) {
-    pPos[i * 3] = (Math.random() - 0.5) * 0.4
-    pPos[i * 3 + 1] = 0.15
-    pPos[i * 3 + 2] = -4.6 + (Math.random() - 0.5) * 0.2
-    pVel[i * 2] = (Math.random() - 0.5) * 0.02
-    pVel[i * 2 + 1] = 0.05 + Math.random() * 0.05
-    pLife[i] = 25 + Math.random() * 50
+    const sp = spawnParticle()
+    pPos[i * 3] = sp.x
+    pPos[i * 3 + 1] = sp.y
+    pPos[i * 3 + 2] = sp.z
+    pVel[i * 2] = sp.vx
+    pVel[i * 2 + 1] = sp.vz
+    pLife[i] = sp.life
+    if (pWander) pWander[i] = sp.wander
+}
+
+// 粒子边界约束：只允许在城墙内部活动；北门门洞越过即"离开"，回入口重生
+function constrainParticle(i) {
+    const r = stepParticleBound(pPos[i * 3], pPos[i * 3 + 2], pVel[i * 2], pVel[i * 2 + 1])
+    if (r.exit) {
+        particleExitCount++
+        respawnParticle(i)
+        return
+    }
+    pPos[i * 3] = r.x
+    pPos[i * 3 + 2] = r.z
+    pVel[i * 2] = r.vx
+    pVel[i * 2 + 1] = r.vz
 }
 
 // 空间哈希斥力约束（模拟 CUDA 原子操作：桶内成对斥力）
@@ -1277,6 +1292,7 @@ function initParticles() {
     pLife = new Float32Array(n)
     pColor = new Float32Array(n * 3)
     pHist = new Float32Array(n * CONFIG.trailHistory * 3)
+    pWander = new Uint8Array(n)
     for (let i = 0; i < n; i++) respawnParticle(i)
 
     ptsGeo = new THREE.BufferGeometry()
@@ -1360,17 +1376,20 @@ function updateParticles(dt) {
         const x = pPos[i * 3]
         const z = pPos[i * 3 + 2]
         const f = velocityFieldAt(x, z, hour)
-        // 实时引擎：粒子速度随真实在园人数缩放（模拟模式 realScale=1 不影响原效果）
-        const vx = f.vx * realScale
-        const vz = f.vz * realScale
+        // 游荡者：北流削弱，横向扩散加大（丰富侧院轨迹）
+        const w = pWander ? pWander[i] : 0
+        const nvz = f.vz * (1 - 0.45 * w)
         // 速度平滑（向速度场收敛）
-        pVel[i * 2] += (vx - pVel[i * 2]) * 0.06
-        pVel[i * 2 + 1] += (vz - pVel[i * 2 + 1]) * 0.06
-        pPos[i * 3] += pVel[i * 2] * dt
-        pPos[i * 3 + 2] += pVel[i * 2 + 1] * dt
+        pVel[i * 2] += (f.vx - pVel[i * 2]) * 0.06
+        pVel[i * 2 + 1] += (nvz - pVel[i * 2 + 1]) * 0.06
+        // 位置级随机扩散：横向游走（丰富轨迹），纵向轻微扰动
+        pPos[i * 3] += pVel[i * 2] * dt + (Math.random() - 0.5) * (0.08 + 0.30 * w)
+        pPos[i * 3 + 2] += pVel[i * 2 + 1] * dt + (Math.random() - 0.5) * 0.02
         pLife[i] -= dt
-        if (pLife[i] <= 0 || pPos[i * 3 + 2] > 8.6 || pPos[i * 3 + 2] < -5.8 || Math.abs(pPos[i * 3]) > 6.8) {
-            respawnParticle(i)
+        if (pLife[i] <= 0) {
+            respawnParticle(i)          // 兜底：卡在角落超时也回入口重生
+        } else {
+            constrainParticle(i)        // 城墙约束 + 北门出口判定
         }
         // 速度 → 色带
         const sp = Math.hypot(pVel[i * 2], pVel[i * 2 + 1])
@@ -1380,6 +1399,8 @@ function updateParticles(dt) {
         pColor[i * 3 + 2] = tmpColor.b
     }
     applyRepulsion()
+    // 粒子间斥力可能把粒子推出墙外，二次约束（含出口判定）
+    for (let i = 0; i < n; i++) constrainParticle(i)
     updateTrails()
     updateArrows()
     ptsGeo.attributes.position.needsUpdate = true
@@ -1403,11 +1424,12 @@ function updateAdaptiveOpacity() {
     contourMat.opacity = CONFIG.contourOpacity * fade
 }
 
-function updateScene(hour, dt) {
+function updateScene(dayIndex, hour, dt) {
     frameCounter++
     // 重建双网格密度场（热力 + 等值线共用，重任务按帧分摊）
-    field = buildDensityField(CONFIG.fieldSize, CONFIG.fieldSize, hour)
-    fieldC = buildDensityField(CONFIG.contourSize, CONFIG.contourSize, hour)
+    const intensity = currentIntensity()
+    field = buildDensityField(CONFIG.fieldSize, CONFIG.fieldSize, hour, intensity)
+    fieldC = buildDensityField(CONFIG.contourSize, CONFIG.contourSize, hour, intensity)
     vMin = Infinity
     vMax = -Infinity
     for (let i = 0; i < field.length; i++) {
@@ -1563,7 +1585,7 @@ function applyRealtime(data) {
     // 实时缩放系数 = 真实在园人数 / 当前时刻模拟在园人数（限幅 0.25~4）
     if (data.currentVisitors != null) {
         const simInPark = simEngine && timeController
-                ? simEngine.getStateAt(timeController.getCurrentHour()).inPark : 500
+                ? simEngine.getStateAt(timeController.getCurrentDay(), timeController.getCurrentHour()).inPark : 500
         realScale = Math.max(0.25, Math.min(4, data.currentVisitors / Math.max(1, simInPark)))
     }
     if (dataSource === 'real') {
@@ -1694,19 +1716,37 @@ function updateHUD() {
     if (now - hudLast < 500) return
     hudLast = now
     const alarmCount = columns.filter((c) => c.alarm).length
+    const dayIndex = timeController ? timeController.getCurrentDay() : 0
     const hour = timeController ? timeController.getCurrentHour() : 8
+    const dayInfo = simEngine ? simEngine.getSummary(dayIndex) : null
     updateStatsPanel()
     updateDensityLabels()
     updateProgressBar()
     const inPark = (dataSource === 'real' && realFlow)
             ? realFlow.currentVisitors
-            : (simEngine ? simEngine.getStateAt(hour).inPark : 0)
+            : (simEngine ? simEngine.getStateAt(dayIndex, hour).inPark : 0)
+    // 粒子轨迹诊断：近墙占比 / 中轴占比 / 北向均速（验证"不贴墙、南进北出"）
+    let nearWall = 0, axis = 0, sumVz = 0
+    if (pPos && pVel) {
+        const pb = PARTICLE_BOUNDS
+        for (let i = 0; i < CONFIG.particleCount; i++) {
+            const px = pPos[i * 3], pz = pPos[i * 3 + 2]
+            if (px < pb.xMin + 0.8 || px > pb.xMax - 0.8 || pz < pb.zMin + 0.8 || pz > pb.zMax - 0.8) nearWall++
+            if (Math.abs(px) < 1.2) axis++
+            sumVz += pVel[i * 2 + 1]
+        }
+    }
+    const pn = CONFIG.particleCount || 1
+    const pctWall = Math.round(nearWall / pn * 100)
+    const pctAxis = Math.round(axis / pn * 100)
+    const avgVz = sumVz / pn
     hud.textContent = [
         '故宫数字孪生 · 高精化数据场',
+        (dayInfo && dayInfo.date ? dayInfo.date + ' ' + (dayInfo.dayName || '') + ' · ' + (dayInfo.phase || '') + ' | 当前承载率 ' + Math.round(inPark / SIM_CONFIG.capacity * 100) + '%' : '日期 待加载'),
         '帧率 ' + fpsValue.toFixed(0) + ' FPS | DrawCall ' + renderer.info.render.calls,
         '当前在园 ' + fmtNum(inPark) + ' 人' + (dataSource === 'real' ? '（实时）' : '') + ' | 时刻 ' + formatHour(hour),
         '热力密度 ' + vMin.toFixed(1) + ' ~ ' + vMax.toFixed(1),
-        '粒子 ' + CONFIG.particleCount + ' | 尾迹 ' + (CONFIG.trailHistory - 1) + ' 层',
+        '粒子 ' + CONFIG.particleCount + ' | 近墙 ' + pctWall + '% | 中轴 ' + pctAxis + '% | 北向均速 ' + avgVz.toFixed(2) + ' | 出口 ' + particleExitCount,
         '等值线 ' + Math.ceil(CONFIG.contourLevels / CONFIG.contourStride) + ' 条 / ' + CONFIG.contourLevels + ' 级',
         '网格 ' + CONFIG.fieldSize + 'x' + CONFIG.fieldSize + ' | SSAA ' + Math.pow(2, ssaaPass.sampleLevel) + 'x',
         '监测节点 ' + columns.length + ' | 告警 ' + alarmCount,
@@ -1794,6 +1834,22 @@ function createTimeBar() {
         }
     }
 
+    timeDayPrev = document.createElement('button')
+    timeDayPrev.textContent = '◀'
+    timeDayPrev.title = '前一天'
+    timeDayPrev.style.cssText = 'padding:3px 8px;border:1px solid rgba(120,180,255,0.35);border-radius:5px;background:rgba(20,40,80,0.6);color:#cfe8ff;cursor:pointer;font-size:12px'
+    timeDayPrev.onclick = () => { if (timeController) timeController.setDay(timeController.getCurrentDay() - 1) }
+
+    timeDayLabel = document.createElement('span')
+    timeDayLabel.textContent = '第1天'
+    timeDayLabel.style.cssText = 'min-width:120px;text-align:center;color:#ffd76a;font-size:12px'
+
+    timeDayNext = document.createElement('button')
+    timeDayNext.textContent = '▶'
+    timeDayNext.title = '下一天'
+    timeDayNext.style.cssText = 'padding:3px 8px;border:1px solid rgba(120,180,255,0.35);border-radius:5px;background:rgba(20,40,80,0.6);color:#cfe8ff;cursor:pointer;font-size:12px'
+    timeDayNext.onclick = () => { if (timeController) timeController.setDay(timeController.getCurrentDay() + 1) }
+
     timeLabel = document.createElement('span')
     timeLabel.textContent = '08:00'
     timeLabel.style.cssText = 'min-width:44px;text-align:center;color:#7fe7ff'
@@ -1823,11 +1879,14 @@ function createTimeBar() {
     timeSpeedBtn.onclick = () => setSpeedFactor(speedFactor === 1 ? 2 : (speedFactor === 2 ? 0.5 : 1))
 
     const hint = document.createElement('span')
-    hint.textContent = '8时→18时 / 30秒'
+    hint.textContent = '8时→18时 / 每天30秒 · 国庆10天'
     hint.style.color = '#6f8cb0'
     hint.style.fontSize = '11px'
 
     timeBar.appendChild(timePlayBtn)
+    timeBar.appendChild(timeDayPrev)
+    timeBar.appendChild(timeDayLabel)
+    timeBar.appendChild(timeDayNext)
     timeBar.appendChild(timeLabel)
     timeBar.appendChild(timeSlider)
     timeBar.appendChild(endLabel)
@@ -1955,6 +2014,10 @@ function updateProgressBar() {
     const hour = timeController.getCurrentHour()
     if (!timeDragging) timeSlider.value = String(Number(hour.toFixed(2)))
     timeLabel.textContent = formatHour(hour)
+    if (timeDayLabel && simEngine) {
+        const d = simEngine.getSummary(timeController.getCurrentDay())
+        timeDayLabel.textContent = d && d.date ? d.date.slice(5).replace('-', '/') + ' ' + (d.dayName || '') + ' · ' + (d.phase || '') : '第' + (timeController.getCurrentDay() + 1) + '天'
+    }
     timePlayBtn.textContent = timeController.running ? '⏸' : '▶'
     timeSpeedBtn.textContent = speedFactor + 'x'
 }
@@ -1981,11 +2044,11 @@ function updateStatsPanel() {
         }
     } else {
         // ===== 模拟引擎 =====
-        const st = simEngine.getStateAt(timeController.getCurrentHour())
+        const st = simEngine.getStateAt(timeController.getCurrentDay(), timeController.getCurrentHour())
         statInpark.textContent = fmtNum(st.inPark)
         if (statsLastSource !== 'sim') {
             statsLastSource = 'sim'
-            const summary = simEngine.getSummary()
+            const summary = simEngine.getSummary(timeController.getCurrentDay())
             if (statTodayEntered) statTodayEntered.textContent = fmtNum(summary.totalEntries)
             if (statTodayOrders) statTodayOrders.textContent = fmtNum(summary.totalOrders)
             if (statCumulative) statCumulative.textContent = fmtNum(summary.cumulativeVisitors)
@@ -2107,6 +2170,18 @@ export function setSimTime(hour) {
     timeController.setHour(Math.max(SIM_CONFIG.openHour, Math.min(SIM_CONFIG.closeHour, hour)))
 }
 
+// 切换演示日期（0..9，对应 09-28 ~ 10-07）
+export function setSimDay(d) {
+    if (!timeController) return
+    timeController.setDay(d)
+}
+
+// 定位到任意 (天, 时刻)
+export function setSimDateTime(dayIndex, hour) {
+    if (!timeController) return
+    timeController.setTime(dayIndex, hour)
+}
+
 export function setQuality(q) {
     CONFIG.quality = q === 'low' ? 'low' : 'high'
     if (ssaaPass) ssaaPass.sampleLevel = CONFIG.quality === 'high' ? 2 : 1
@@ -2156,6 +2231,8 @@ export function getSceneStats() {
         deltaKb: deltaSync ? deltaSync.getLoadKB() : 0,
         latencyMs: deltaSync ? deltaSync.getLatencyMs() : 0,
         hour: timeController ? timeController.getCurrentHour() : 8,
+        day: timeController ? timeController.getCurrentDay() : 0,
+        dayCount: simEngine ? simEngine.dayCount : 1,
         lod: { ...lodCounts },
         exposure,
     }

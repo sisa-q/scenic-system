@@ -28,6 +28,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -136,7 +137,7 @@ public class OrderServiceImpl implements OrderService {
     public Map<String, Object> pageOrders(Integer status, String key, Long userId, String role, int page, int size) {
         int safePage = Math.max(1, page);
         int safeSize = Math.min(100, Math.max(1, size));
-        Pageable pageable = PageRequest.of(safePage - 1, safeSize);
+        Pageable pageable = PageRequest.of(safePage - 1, safeSize, Sort.by(Sort.Direction.DESC, "id"));
         boolean hasKey = key != null && !key.trim().isEmpty();
         String k = hasKey ? key.trim() : null;
 
@@ -178,6 +179,7 @@ public class OrderServiceImpl implements OrderService {
         Map<String, Object> data = new HashMap<>();
         data.put("list", orders);
         data.put("total", result.getTotalElements());
+        data.put("pendingRefund", orderRepository.countByStatus(5));
         return data;
     }
 

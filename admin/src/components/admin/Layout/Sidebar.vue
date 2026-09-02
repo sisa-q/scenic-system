@@ -52,6 +52,10 @@
                 <el-icon><Checked /></el-icon>
                 <span>核销管理</span>
             </el-menu-item>
+            <el-menu-item index="/admin/agent">
+                <el-icon><Cpu /></el-icon>
+                <span>AI 智能体</span>
+            </el-menu-item>
             <el-menu-item index="/admin/profile">
                 <el-icon><User /></el-icon>
                 <span>个人中心</span>
@@ -63,14 +67,14 @@
 <script>
     import {
         Monitor, Location, Ticket, Clock, List,
-        Star, Notification, Checked, User, Reading
+        Star, Notification, Checked, User, Reading, Cpu
     } from '@element-plus/icons-vue'
 
     export default {
         name: 'Sidebar',
         components: {
             Monitor, Location, Ticket, Clock, List,
-        Star, Notification, Checked, User
+        Star, Notification, Checked, User, Cpu
         }
     }
 </script>

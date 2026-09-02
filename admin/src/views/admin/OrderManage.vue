@@ -22,7 +22,7 @@
                 <el-option label="已失效" :value="4" />
                 <el-option label="已申请待退款" :value="5" />
             </el-select>
-            <el-button @click="fetchList">搜索</el-button>
+            <el-button @click="handleSearch">搜索</el-button>
             <el-button @click="resetSearch">重置</el-button>
             <el-button @click="fetchList">刷新</el-button>
             <el-button type="danger" plain @click="handleClearAll">清空订单数据</el-button>
@@ -77,6 +77,20 @@
             </el-table-column>
         </el-table>
 
+        <!-- 分页 -->
+        <div style="display:flex;justify-content:flex-end;margin-top:10px;">
+            <el-pagination
+                    background
+                    layout="total, sizes, prev, pager, next"
+                    :total="total"
+                    v-model:current-page="page"
+                    v-model:page-size="pageSize"
+                    :page-sizes="[10, 20, 50, 100]"
+                    @current-change="onPageChange"
+                    @size-change="onSizeChange"
+            />
+        </div>
+
         <!-- 订单详情弹窗 -->
         <el-dialog v-model="detailVisible" title="订单详情" width="500px">
             <div v-if="currentOrder">
@@ -113,6 +127,10 @@
                 searchKey: '',
                 statusFilter: undefined,
                 tableData: [],
+                page: 1,
+                pageSize: 20,
+                total: 0,
+                pendingRefund: 0,
                 detailVisible: false,
                 currentOrder: null,
                 selectedIds: [],
@@ -130,7 +148,7 @@
         computed: {
             // 待处理退款计数：已申请待退款 + 已支付已停用待退款
             pendingRefundCount() {
-                return this.tableData.filter(r => r.status === 5 || (r.status === 1 && r.disabled)).length
+                return this.pendingRefund || 0
             }
         },
         mounted() {
@@ -183,8 +201,20 @@
             // 静默刷新数据（不清除选中）
             async refreshData() {
                 try {
-                    const res = await getOrderList({ key: this.searchKey, status: this.statusFilter })
-                    this.tableData = (res.data || []).slice().sort((a, b) => (b.id || 0) - (a.id || 0))
+                    const res = await getOrderList({
+                        key: this.searchKey,
+                        status: this.statusFilter,
+                        page: this.page,
+                        size: this.pageSize
+                    })
+                    this.tableData = (res.data && res.data.list) || []
+                    this.total = (res.data && res.data.total) || 0
+                    this.pendingRefund = (res.data && res.data.pendingRefund) || 0
+                    // 当前页越界（如删除后）自动回退到最后一页
+                    if (this.total > 0 && this.tableData.length === 0 && this.page > 1) {
+                        this.page = Math.max(1, Math.ceil(this.total / this.pageSize))
+                        return this.refreshData()
+                    }
                 } catch (e) {
                     console.error('获取订单失败:', e)
                 }
@@ -211,6 +241,22 @@
             resetSearch() {
                 this.searchKey = ''
                 this.statusFilter = undefined
+                this.page = 1
+                this.fetchList()
+            },
+            // 搜索/筛选：回到第 1 页
+            handleSearch() {
+                this.page = 1
+                this.fetchList()
+            },
+            // 分页：切页 / 切每页条数
+            onPageChange(p) {
+                this.page = p
+                this.fetchList()
+            },
+            onSizeChange(size) {
+                this.pageSize = size
+                this.page = 1
                 this.fetchList()
             },
             showDetail(row) {

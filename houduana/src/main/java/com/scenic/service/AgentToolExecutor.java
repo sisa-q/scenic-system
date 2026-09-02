@@ -26,11 +26,15 @@ public class AgentToolExecutor {
     @Autowired(required = false) private OrderRepository orderRepository;
     @Autowired(required = false) private OrderService orderService;
     @Autowired(required = false) private PayService payService;
+    @Autowired(required = false) private NationalDayPlaybookService playbook;
+    @Autowired(required = false) private NoticeService noticeService;
+    @Autowired(required = false) private TimeSlotService timeSlotService;
+    @Autowired(required = false) private UserRepository userRepository;
 
     private final DateTimeFormatter DT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private final DateTimeFormatter D = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    public String execute(String name, Map<String, Object> args, Long userId) {
+    public String execute(String name, Map<String, Object> args, Long userId, String role) {
         try {
             switch (name) {
                 case "get_weather": return weather(args);
@@ -43,6 +47,15 @@ public class AgentToolExecutor {
                 case "place_order": return placeOrder(userId, args);
                 case "mock_pay": return mockPay(userId, args);
                 case "apply_refund": return applyRefund(userId, args);
+                // ===== 运营决策 / 应急调度（国庆 10 天模拟剧本） =====
+                case "get_sales_summary": return playbookOk() ? playbook.salesSummary(strArg(args, "from"), strArg(args, "to")) : "剧本数据未加载";
+                case "get_flow_summary": return playbookOk() ? playbook.flowSummary(strArg(args, "from"), strArg(args, "to")) : "剧本数据未加载";
+                case "get_slot_occupancy": return playbookOk() ? playbook.occupancySummary(strArg(args, "from"), strArg(args, "to")) : "剧本数据未加载";
+                case "get_refund_stats": return playbookOk() ? playbook.refundSummary(strArg(args, "from"), strArg(args, "to")) : "剧本数据未加载";
+                case "get_weather_forecast": return playbookOk() ? playbook.weatherForecast(intArg(args, "days")) : "剧本数据未加载";
+                case "get_emergency_scan": return playbookOk() ? playbook.emergencyScan(strArg(args, "date")) : "剧本数据未加载";
+                case "publish_notice": return publishNotice(args, userId, role);
+                case "dispatch_add_slot": return dispatchAddSlot(args, userId, role);
                 default: return "未知工具：" + name;
             }
         } catch (Exception e) {
@@ -76,6 +89,18 @@ public class AgentToolExecutor {
                     Order o = resolveOrder(args);
                     if (o == null) return "订单不存在";
                     return "对订单 " + o.getOrderNo() + " 申请退款，金额 " + o.getTotalAmount() + " 元。";
+                }
+                case "publish_notice": {
+                    String title = strArg(args, "title");
+                    String content = strArg(args, "content");
+                    return "发布公告「" + (title == null || title.isBlank() ? "应急公告" : title) + "」：" + (content == null || content.isBlank() ? "" : content);
+                }
+                case "dispatch_add_slot": {
+                    Long policyId = longArg(args, "policyId");
+                    String date = strArg(args, "date");
+                    int hour = intArg(args, "startHour");
+                    int quota = intArg(args, "quota");
+                    return "为票种 " + policyId + " 在 " + date + " " + (hour < 0 ? 16 : hour) + ":00 加开时段，配额 " + (quota <= 0 ? 1000 : quota);
                 }
                 default: return "";
             }
@@ -287,6 +312,69 @@ public class AgentToolExecutor {
             if (byNo2 != null) return byNo2;
         }
         return null;
+    }
+
+    // ==================== 运营决策 / 应急调度工具 ====================
+    private boolean playbookOk() { return playbook != null && playbook.available(); }
+
+    /** 发布应急/运营公告（写操作，仅管理员，走确认卡） */
+    private String publishNotice(Map<String, Object> args, Long userId, String role) {
+        if (!isAdmin(userId, role)) return "仅管理员可发布公告";
+        if (noticeService == null) return "公告服务不可用";
+        String title = strArg(args, "title");
+        String content = strArg(args, "content");
+        if (title == null || title.isBlank()) title = "应急公告";
+        Notice notice = new Notice();
+        notice.setTitle(title);
+        notice.setContent(content == null || content.isBlank() ? "系统智能体发布的运营公告。" : content);
+        notice.setPublishTime(new Date());
+        notice.setStatus(1);
+        Notice saved = noticeService.add(notice);
+        return "公告已发布（id=" + saved.getId() + "）「" + title + "」";
+    }
+
+    /** 调度加开时段（写操作，仅管理员，走确认卡） */
+    private String dispatchAddSlot(Map<String, Object> args, Long userId, String role) {
+        if (!isAdmin(userId, role)) return "仅管理员可加开时段";
+        if (timeSlotService == null) return "时段服务不可用";
+        Long policyId = longArg(args, "policyId");
+        if (policyId == null) return "加开时段缺少票种 policyId";
+        if (policyRepository == null || policyRepository.findById(policyId).isEmpty()) return "票种 " + policyId + " 不存在，请先查 get_policies";
+        String date = strArg(args, "date");
+        if (date == null || date.isBlank()) date = LocalDate.now().toString();
+        int hour = intArg(args, "startHour");
+        if (hour < 0 || hour > 23) hour = 16;
+        int quota = intArg(args, "quota");
+        if (quota <= 0) quota = 1000;
+        LocalDateTime start = LocalDate.parse(date).atTime(hour, 0);
+        LocalDateTime end = start.plusHours(2);
+        TimeSlot slot = new TimeSlot();
+        slot.setPolicyId(policyId);
+        slot.setStartTime(start);
+        slot.setEndTime(end);
+        slot.setQuota(quota);
+        slot.setBooked(0);
+        slot.setStatus(1);
+        TimeSlot saved = timeSlotService.add(slot);
+        return "已加开时段 id=" + saved.getId() + "（票种 " + policyId + "，" + start.format(DT) + " ~ " + end.format(DT) + "，配额 " + quota + "）";
+    }
+
+    private boolean isAdmin(Long userId, String role) {
+        if (role != null && "admin".equals(role)) return true;
+        if (userId != null && userRepository != null) {
+            try {
+                return userRepository.findById(userId).map(u -> "admin".equals(u.getRole())).orElse(false);
+            } catch (Exception ignored) { }
+        }
+        return false;
+    }
+
+    private String strArg(Map<String, Object> args, String key) {
+        if (args == null || !args.containsKey(key)) return null;
+        Object v = args.get(key);
+        if (v == null) return null;
+        String s = String.valueOf(v);
+        return s.isBlank() || "null".equals(s) ? null : s.trim();
     }
 
     /** 兜底：按问题自动推断写操作（支付/退款 + 订单号或最新订单），返回确认信息；无法推断返回 null */

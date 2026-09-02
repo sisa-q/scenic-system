@@ -24,6 +24,8 @@ import java.time.Duration;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 /** 游客问答 Agent：Ollama(qwen2.5:3b) + 工具调用(Function Calling) + 知识库 RAG + 危险操作确认 */
 @Service
@@ -52,7 +54,42 @@ public class AgentService {
 ]
 """;
 
+    // ==================== 运营决策 / 应急调度（国庆 10 天模拟剧本） ====================
+    private static final String OPS_SYSTEM_PROMPT = "你是智慧景区的运营决策分析助手，服务于北京故宫智慧景区。你的职责是基于国庆假期前后 10 天（2026-09-28 ~ 2026-10-07）的模拟运营数据，回答运营态势、客流、销售、时段预约、退款等问题，并给出数据支撑的运营建议。所有数据以工具调用返回为准，不要编造。";
+    private static final String OPS_TOOL_TIP = "你可以调用以下只读工具查询国庆 10 天模拟运营数据。用户问运营分析时，先调用 get_flow_summary / get_sales_summary / get_slot_occupancy / get_refund_stats / get_weather_forecast 获取数据，再给出结构化结论与建议。日期参数格式 yyyy-MM-dd，可省略（默认全窗口）。";
+    private static final String EMERGENCY_SYSTEM_PROMPT = "你是智慧景区的应急调度助手，服务于北京故宫智慧景区。你的职责是基于国庆假期前后 10 天的模拟数据，监测客流承载、时段售罄、天气预警、退款激增等异常，给出分级（安全/警戒/危险/超限）处置建议。发布公告、加开时段属写操作：直接调用对应工具即可，系统会自动弹出确认卡由管理员确认，不要向用户重复索要确认。";
+    private static final String EMERGENCY_TOOL_TIP = "你可以调用 get_emergency_scan 一键扫描指定日期（或全窗口）的异常态势，也可用 get_flow_summary / get_slot_occupancy / get_refund_stats / get_weather_forecast 查看细节。处置时给出具体建议；确需执行时调用 publish_notice（发布公告）或 dispatch_add_slot（加开时段）。";
+
+    private static final String OPS_TOOLS_JSON = """
+[
+{"type":"function","function":{"name":"get_sales_summary","description":"查询区间内销售与退款汇总（订单/张票/销售额/退款率）","parameters":{"type":"object","properties":{"from":{"type":"string","description":"开始日期 yyyy-MM-dd，可空"},"to":{"type":"string","description":"结束日期 yyyy-MM-dd，可空"}},"required":[]}}},
+{"type":"function","function":{"name":"get_flow_summary","description":"查询区间内客流汇总（日入园/承载率/在园峰值/峰值时刻）","parameters":{"type":"object","properties":{"from":{"type":"string","description":"开始日期 yyyy-MM-dd，可空"},"to":{"type":"string","description":"结束日期 yyyy-MM-dd，可空"}},"required":[]}}},
+{"type":"function","function":{"name":"get_slot_occupancy","description":"查询区间内分时时段预约率与售罄情况","parameters":{"type":"object","properties":{"from":{"type":"string","description":"开始日期 yyyy-MM-dd，可空"},"to":{"type":"string","description":"结束日期 yyyy-MM-dd，可空"}},"required":[]}}},
+{"type":"function","function":{"name":"get_refund_stats","description":"查询区间内退款率与退款申请量，标记激增","parameters":{"type":"object","properties":{"from":{"type":"string","description":"开始日期 yyyy-MM-dd，可空"},"to":{"type":"string","description":"结束日期 yyyy-MM-dd，可空"}},"required":[]}}},
+{"type":"function","function":{"name":"get_weather_forecast","description":"查询国庆 10 天天气与预警","parameters":{"type":"object","properties":{"days":{"type":"integer","description":"可空"}},"required":[]}}}
+]
+""";
+
+    private static final String EMERGENCY_TOOLS_JSON = """
+[
+{"type":"function","function":{"name":"get_flow_summary","description":"查询区间内客流汇总（日入园/承载率/在园峰值）","parameters":{"type":"object","properties":{"from":{"type":"string"},"to":{"type":"string"}},"required":[]}}},
+{"type":"function","function":{"name":"get_slot_occupancy","description":"查询区间内分时时段预约率与售罄情况","parameters":{"type":"object","properties":{"from":{"type":"string"},"to":{"type":"string"}},"required":[]}}},
+{"type":"function","function":{"name":"get_refund_stats","description":"查询区间内退款率与退款申请量，标记激增","parameters":{"type":"object","properties":{"from":{"type":"string"},"to":{"type":"string"}},"required":[]}}},
+{"type":"function","function":{"name":"get_weather_forecast","description":"查询国庆 10 天天气与预警","parameters":{"type":"object","properties":{"days":{"type":"integer"}},"required":[]}}},
+{"type":"function","function":{"name":"get_emergency_scan","description":"一键扫描国庆 10 天（或指定日期）应急异常：承载率四区/时段售罄/天气预警/退款激增，返回分级处置建议","parameters":{"type":"object","properties":{"date":{"type":"string","description":"指定日期 yyyy-MM-dd，可空（空=全窗口）"}},"required":[]}}},
+{"type":"function","function":{"name":"publish_notice","description":"发布应急/运营公告（写操作，需管理员确认）","parameters":{"type":"object","properties":{"title":{"type":"string","description":"公告标题"},"content":{"type":"string","description":"公告内容"}},"required":["content"]}}},
+{"type":"function","function":{"name":"dispatch_add_slot","description":"调度加开分时时段（写操作，需管理员确认）","parameters":{"type":"object","properties":{"policyId":{"type":"integer","description":"票种ID"},"date":{"type":"string","description":"日期 yyyy-MM-dd"},"startHour":{"type":"integer","description":"开始小时，如 16"},"quota":{"type":"integer","description":"配额"}},"required":["policyId"]}}}
+]
+""";
+
+    private static final Set<String> EMERGENCY_WRITE_TOOLS = new HashSet<>(Arrays.asList("publish_notice", "dispatch_add_slot"));
+
+    @Autowired(required = false) private NationalDayPlaybookService playbook;
+    @Autowired(required = false) private VramMonitor vramMonitor;
     @Autowired(required = false) private ScenicSpotRepository spotRepository;
+
+    /** 并发限 1：单模型共享，请求排队串行（最终形态：并发 >1 排队串行） */
+    private final Semaphore agentLock = new Semaphore(1);
     @Autowired(required = false) private TicketPolicyRepository policyRepository;
     @Autowired(required = false) private WeatherService weatherService;
     @Autowired(required = false) private KnowledgeDocRepository docRepository;
@@ -71,10 +108,38 @@ public class AgentService {
 
     /** 常规对话：调用工具、循环直到得到答案或需确认；写操作被“谎称成功”时强制纠错一轮 */
     public Map<String, Object> chat(String question, Long userId, String sessionId) throws Exception {
+        return chat(question, userId, sessionId, null);
+    }
+
+    /** 对话（支持角色）：role = tourist / ops / emergency；缺省按关键词自动路由 */
+    public Map<String, Object> chat(String question, Long userId, String sessionId, String role) throws Exception {
+        if (!agentLock.tryAcquire(30, TimeUnit.SECONDS)) {
+            return busyAnswer("当前智能体请求较多，请稍后再试。");
+        }
+        try {
+            return chatInner(question, userId, sessionId, role);
+        } finally {
+            agentLock.release();
+        }
+    }
+
+    private Map<String, Object> chatInner(String question, Long userId, String sessionId, String role) throws Exception {
+        String r = resolveRole(question, role);
+        // 超限区（>90%）兜底：不调 LLM，降级为规则问答提示
+        if (vramMonitor != null && vramMonitor.zone() == VramMonitor.OVER) {
+            Map<String, Object> deg = new LinkedHashMap<>();
+            deg.put("type", "answer");
+            deg.put("content", "当前显存超限（>90%），智能体已降级。请重启 Ollama 释放显存，或关闭占用显存的应用（如浏览器 3D/桌面程序）后再试。");
+            deg.put("steps", new ArrayList<>());
+            deg.put("actions", new ArrayList<>());
+            deg.put("resource", resourceInfo());
+            return deg;
+        }
+        Set<String> writeTools = writeToolsFor(r);
         String memKey = memoryKey(userId, sessionId);
         List<Map<String, Object>> history = sessionMemory.computeIfAbsent(memKey, k -> new ArrayList<>());
         List<Map<String, Object>> messages = new ArrayList<>();
-        messages.add(systemMsg(question));
+        messages.add(systemMsg(question, r));
         messages.addAll(history);
         messages.add(userMsg(question));
         boolean writeToolCalled = false;
@@ -82,7 +147,7 @@ public class AgentService {
         Map<String, Object> pending = null;
         List<Map<String, Object>> steps = new ArrayList<>();
         for (int round = 0; round < 4; round++) {
-            JsonNode resp = chatApi(messages, true);
+            JsonNode resp = chatApi(messages, true, r);
             JsonNode msg = resp.path("message");
             JsonNode calls = msg.path("tool_calls");
             if (calls.isArray() && calls.size() > 0) {
@@ -91,7 +156,7 @@ public class AgentService {
                 for (JsonNode call : calls) {
                     String name = call.path("function").path("name").asText("");
                     Map<String, Object> args = parseArgs(call.path("function").path("arguments"));
-                    if (WRITE_TOOLS.contains(name)) {
+                    if (writeTools.contains(name)) {
                         writeToolCalled = true;
                         hasWrite = true;
                         // 修正占位参数：支付/退款时若参数无效，用问题中的订单号或最新订单兜底
@@ -106,7 +171,7 @@ public class AgentService {
                         cur.put("summary", toolExecutor == null ? "" : toolExecutor.preview(name, args));
                         steps.add(stepWithParams(name, "need_confirm", String.valueOf(cur.get("summary")), args));
                     } else {
-                        String result = toolExecutor == null ? "工具不可用" : toolExecutor.execute(name, args, userId);
+                        String result = toolExecutor == null ? "工具不可用" : toolExecutor.execute(name, args, userId, r);
                         steps.add(step(name, "done", result));
                         Map<String, Object> asst = new LinkedHashMap<>();
                         asst.put("role", "assistant");
@@ -114,7 +179,7 @@ public class AgentService {
                         asst.put("tool_calls", List.of(call));
                         Map<String, Object> tool = new LinkedHashMap<>();
                         tool.put("role", "tool");
-                        tool.put("content", result);
+                        tool.put("content", truncateTool(result));
                         messages.add(asst);
                         messages.add(tool);
                     }
@@ -130,7 +195,7 @@ public class AgentService {
             String content = msg.path("content").asText("");
             if (content.isEmpty()) content = "我还在整理信息，请换个方式再问我一次，比如“故宫门票多少钱”或“帮我买2张故宫成人票”。";
             // 纠错：用户意图是写操作，模型却未调用任何工具就声称完成 → 强制再试一轮
-            if (writeIntent(question) && !writeToolCalled) {
+            if (writeIntent(question, r) && !writeToolCalled) {
                 messages.add(userMsg("（系统提醒：你刚才的回答声称完成了操作，但你并没有调用任何工具。请立即调用相应工具真正执行：支付请调用 mock_pay，退款请调用 apply_refund，下单请调用 place_order；参数从对话历史或 get_my_orders 获取。若确实无法执行，请如实说明原因，不要谎称成功。）"));
                 continue;
             }
@@ -138,28 +203,30 @@ public class AgentService {
             answer.put("type", "answer");
             answer.put("content", content);
             answer.put("steps", steps);
-            answer.put("actions", buildActions(steps, question));
+            answer.put("actions", buildActions(steps, question, r));
+            answer.put("resource", resourceInfo());
             appendMemory(history, question, content);
             return answer;
         }
         if (hasConfirm && pending != null) {
             pending.put("steps", steps);
-            pending.put("actions", buildActions(steps, question));
+            pending.put("actions", buildActions(steps, question, r));
             return pending;
         }
         // 终极兜底：模型仍未调用工具时，按问题自动推断写操作（支付/退款 + 订单号或最新订单）
-        if (writeIntent(question) && !writeToolCalled && toolExecutor != null) {
+        if (isTourist(r) && writeIntent(question, r) && !writeToolCalled && toolExecutor != null) {
             Map<String, Object> auto = toolExecutor.autoConfirm(question, userId);
             if (auto != null) return auto;
         }
         Map<String, Object> answer = new LinkedHashMap<>();
         answer.put("type", "answer");
-        List<Map<String, Object>> acts = buildActions(steps, question);
+        List<Map<String, Object>> acts = buildActions(steps, question, r);
         String fc = "处理步骤较多，请稍后再试。";
         if (!acts.isEmpty()) fc = "已自动为你操作页面：定位故宫 → 进入详情 → 购票选择 → 选中时段。请在下单确认页核对数量后提交订单。";
         answer.put("content", fc);
         answer.put("steps", steps);
         answer.put("actions", acts);
+        answer.put("resource", resourceInfo());
         return answer;
     }
 
@@ -180,7 +247,8 @@ public class AgentService {
     }
 
     /** 根据本次工具调用轨迹 + 用户问题，生成前端页面动作（确定性映射，不依赖模型发挥） */
-    private List<Map<String, Object>> buildActions(List<Map<String, Object>> steps, String question) {
+    private List<Map<String, Object>> buildActions(List<Map<String, Object>> steps, String question, String role) {
+        if (!isTourist(role)) return new ArrayList<>();   // 管理端运营/应急不产生游客页面动作
         List<Map<String, Object>> actions = new ArrayList<>();
         Set<String> tools = new HashSet<>();
         Long slotId = null;
@@ -286,11 +354,51 @@ public class AgentService {
     }
 
     /** 判断用户问题是否表达“执行写操作”的意图（用于纠错：防止模型谎称完成） */
-    private boolean writeIntent(String q) {
+    private boolean writeIntent(String q, String role) {
         if (q == null) return false;
-        return q.contains("支付") || q.contains("付款") || q.contains("下单")
+        boolean base = q.contains("支付") || q.contains("付款") || q.contains("下单")
             || q.contains("退款") || q.contains("退票") || q.contains("退钱")
             || q.contains("帮我买") || q.contains("帮我订") || q.contains("购买");
+        if (isEmergency(role)) {
+            return base || q.contains("发布") || q.contains("公告") || q.contains("加开") || q.contains("调度") || q.contains("通知");
+        }
+        return base;
+    }
+
+    // ==================== 角色路由 ====================
+    private String resolveRole(String question, String role) {
+        if (role != null && !role.isBlank()) return role.trim();
+        if (question != null) {
+            String q = question;
+            boolean emg = q.contains("异常") || q.contains("预警") || q.contains("超载") || q.contains("超限") || q.contains("限流")
+                || q.contains("突发") || q.contains("风险") || q.contains("预案") || q.contains("告警") || q.contains("应急")
+                || q.contains("有没有问题") || q.contains("安全隐患");
+            if (emg) return "emergency";
+            boolean ops = q.contains("运营") || q.contains("客流分析") || q.contains("销售") || q.contains("营收") || q.contains("复盘")
+                || q.contains("卖了多少") || q.contains("占比") || q.contains("日报") || q.contains("销量") || q.contains("数据分析")
+                || q.contains("退款率") || q.contains("哪个时段");
+            if (ops) return "ops";
+        }
+        return "tourist";
+    }
+
+    private boolean isTourist(String r) { return !"ops".equals(r) && !"emergency".equals(r); }
+    private boolean isOps(String r) { return "ops".equals(r); }
+    private boolean isEmergency(String r) { return "emergency".equals(r); }
+
+    private String toolsJsonFor(String r) {
+        if (isOps(r)) return OPS_TOOLS_JSON;
+        if (isEmergency(r)) return EMERGENCY_TOOLS_JSON;
+        return TOOLS_JSON;
+    }
+
+    private Set<String> writeToolsFor(String r) {
+        if (isEmergency(r)) return EMERGENCY_WRITE_TOOLS;
+        return WRITE_TOOLS;
+    }
+
+    private String playbookContext() {
+        return playbook == null ? "（模拟数据未加载）" : playbook.overview();
     }
 
     private String memoryKey(Long userId, String sessionId) {
@@ -310,26 +418,49 @@ public class AgentService {
 
     /** 确认后执行危险操作，然后生成最终回答 */
     public Map<String, Object> confirm(String question, String action, Map<String, Object> params, Long userId, String sessionId) throws Exception {
+        return confirm(question, action, params, userId, sessionId, null);
+    }
+
+    /** 确认并执行写操作（支持角色） */
+    public Map<String, Object> confirm(String question, String action, Map<String, Object> params, Long userId, String sessionId, String role) throws Exception {
+        if (!agentLock.tryAcquire(30, TimeUnit.SECONDS)) {
+            return busyAnswer("当前智能体请求较多，请稍后再试。");
+        }
+        try {
+            return confirmInner(question, action, params, userId, sessionId, role);
+        } finally {
+            agentLock.release();
+        }
+    }
+
+    private Map<String, Object> confirmInner(String question, String action, Map<String, Object> params, Long userId, String sessionId, String role) throws Exception {
         if (userId == null) {
             Map<String, Object> r = new LinkedHashMap<>();
             r.put("type", "answer");
             r.put("content", "请先登录再执行该操作");
             return r;
         }
+        String rr = resolveRole(question, role);
         String memKey = memoryKey(userId, sessionId);
         List<Map<String, Object>> history = sessionMemory.computeIfAbsent(memKey, k -> new ArrayList<>());
-        String result = toolExecutor == null ? "工具不可用" : toolExecutor.execute(action, params, userId);
-        List<Map<String, Object>> messages = new ArrayList<>();
-        messages.add(systemMsg(question));
-        messages.addAll(history);
-        messages.add(userMsg(question));
-        Map<String, Object> note = new LinkedHashMap<>();
-        note.put("role", "user");
-        note.put("content", "（已执行" + action + "，结果：" + result + "）请给游客一个简洁、友好的结果说明。");
-        messages.add(note);
-        JsonNode resp = chatApi(messages, false);
-        String content = resp.path("message").path("content").asText("");
-        if (content.isEmpty()) content = "操作已完成，请查看订单。";
+        String result = toolExecutor == null ? "工具不可用" : toolExecutor.execute(action, params, userId, rr);
+        String content;
+        if (vramMonitor != null && vramMonitor.zone() == VramMonitor.OVER) {
+            // 超限区：跳过 LLM 润色，直接返回执行结果
+            content = "操作已执行：" + result;
+        } else {
+            List<Map<String, Object>> messages = new ArrayList<>();
+            messages.add(systemMsg(question, rr));
+            messages.addAll(history);
+            messages.add(userMsg(question));
+            Map<String, Object> note = new LinkedHashMap<>();
+            note.put("role", "user");
+            note.put("content", "（已执行" + action + "，结果：" + result + "）请给游客一个简洁、友好的结果说明。");
+            messages.add(note);
+            JsonNode resp = chatApi(messages, false, rr);
+            content = resp.path("message").path("content").asText("");
+            if (content.isEmpty()) content = "操作已完成，请查看订单。";
+        }
         appendMemory(history, question, content);
         List<Map<String, Object>> steps = new ArrayList<>();
         steps.add(step(action, "done", result));
@@ -340,13 +471,20 @@ public class AgentService {
         answer.put("content", content);
         answer.put("steps", steps);
         answer.put("actions", actions);
+        answer.put("resource", resourceInfo());
         return answer;
     }
 
-    private Map<String, Object> systemMsg(String question) {
+    private Map<String, Object> systemMsg(String question, String role) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("role", "system");
-        m.put("content", SYSTEM_PROMPT + "\n\n" + buildContext(question) + "\n\n" + TOOL_TIP + "\n\n" + SUFFIX);
+        if (isOps(role)) {
+            m.put("content", OPS_SYSTEM_PROMPT + "\n\n" + playbookContext() + "\n\n" + OPS_TOOL_TIP + "\n\n" + SUFFIX);
+        } else if (isEmergency(role)) {
+            m.put("content", EMERGENCY_SYSTEM_PROMPT + "\n\n" + playbookContext() + "\n\n" + EMERGENCY_TOOL_TIP + "\n\n" + SUFFIX);
+        } else {
+            m.put("content", SYSTEM_PROMPT + "\n\n" + buildContext(question) + "\n\n" + TOOL_TIP + "\n\n" + SUFFIX);
+        }
         return m;
     }
 
@@ -357,14 +495,17 @@ public class AgentService {
         return m;
     }
 
-    private JsonNode chatApi(List<Map<String, Object>> messages, boolean withTools) throws Exception {
+    private JsonNode chatApi(List<Map<String, Object>> messages, boolean withTools, String role) throws Exception {
         Map<String, Object> req = new LinkedHashMap<>();
         req.put("model", model);
         req.put("messages", messages);
-        if (withTools) req.put("tools", objectMapper.readTree(TOOLS_JSON));
+        if (withTools) req.put("tools", objectMapper.readTree(toolsJsonFor(role)));
         req.put("stream", false);
         Map<String, Object> opts = new LinkedHashMap<>();
         opts.put("temperature", 0.2);
+        // 危险区(≥85%)收紧单请求 max_tokens，警戒区及以上限 512，避免长回答超过 120s 超时
+        int zone = vramMonitor == null ? VramMonitor.SAFE : vramMonitor.zone();
+        opts.put("num_predict", zone >= VramMonitor.DANGER ? 256 : 512);
         req.put("options", opts);
         String json = objectMapper.writeValueAsString(req);
         HttpRequest r = HttpRequest.newBuilder()
@@ -478,7 +619,7 @@ public class AgentService {
                     }
                     scored.sort((a, b) -> Double.compare((double) b[0], (double) a[0]));
                     sb.append("\n").append("【知识库相关文档】").append("\n");
-                    int top = Math.min(5, scored.size());
+                    int top = Math.min(ragTopK(), scored.size());
                     for (int i = 0; i < top; i++) {
                         KnowledgeDoc d = (KnowledgeDoc) scored.get(i)[1];
                         sb.append("文档：").append(d.getTitle()).append("\n").append(d.getContent()).append("\n");
@@ -494,6 +635,9 @@ public class AgentService {
         Map<String, Object> req = new LinkedHashMap<>();
         req.put("model", embedModel);
         req.put("prompt", text);
+        Map<String, Object> opts = new LinkedHashMap<>();
+        opts.put("num_gpu", 0);   // 嵌入强制 CPU：RAG 不占独显（最终形态：nomic ≈0 显存）
+        req.put("options", opts);
         String json = objectMapper.writeValueAsString(req);
         HttpRequest r = HttpRequest.newBuilder()
                 .uri(URI.create(ollamaUrl + "/api/embeddings"))
@@ -507,6 +651,36 @@ public class AgentService {
         float[] arr = new float[emb.size()];
         for (int i = 0; i < emb.size(); i++) arr[i] = (float) emb.get(i).asDouble();
         return arr;
+    }
+
+    /** RAG top-k：警戒区及以下 3，危险区及以上收紧到 2（最终形态：top-k=3） */
+    private int ragTopK() {
+        int zone = vramMonitor == null ? VramMonitor.SAFE : vramMonitor.zone();
+        return zone >= VramMonitor.DANGER ? 2 : 3;
+    }
+
+    /** 工具结果截断：只把必要字段回传模型（危险区"工具返回精简"） */
+    private String truncateTool(String s) {
+        if (s == null) return "";
+        if (s.length() <= 900) return s;
+        return s.substring(0, 900) + "…（工具结果过长已截断）";
+    }
+
+    /** 并发繁忙 / 资源超限时的降级回答 */
+    private Map<String, Object> busyAnswer(String msg) {
+        Map<String, Object> r = new LinkedHashMap<>();
+        r.put("type", "answer");
+        r.put("content", msg);
+        r.put("steps", new ArrayList<>());
+        r.put("actions", new ArrayList<>());
+        r.put("resource", resourceInfo());
+        return r;
+    }
+
+    /** 显存资源快照（随回答返回，供前端展示四区状态） */
+    private Map<String, Object> resourceInfo() {
+        if (vramMonitor == null) return new LinkedHashMap<>();
+        return vramMonitor.info();
     }
 
     private double cosine(float[] a, float[] b) {

@@ -16,6 +16,9 @@ public class AgentController {
     @Autowired(required = false)
     private AgentService agentService;
 
+    @Autowired(required = false)
+    private com.scenic.service.VramMonitor vramMonitor;
+
     @Autowired
     private JwtUtil jwtUtil;
 
@@ -31,10 +34,18 @@ public class AgentController {
             if (agentService == null) return Result.error("AI 服务未启用");
             Long userId = parseUserId(authHeader);
             String sessionId = body == null ? null : body.get("sessionId");
-            return Result.success(agentService.chat(question.trim(), userId, sessionId));
+            String role = body == null ? null : body.get("role");
+            return Result.success(agentService.chat(question.trim(), userId, sessionId, role));
         } catch (Exception e) {
             return Result.error("AI 服务暂不可用：" + e.getMessage());
         }
+    }
+
+    /** 显存资源与四区状态（最终形态：资源约束降级监控） */
+    @GetMapping("/resource")
+    public Result resource() {
+        if (vramMonitor == null) return Result.success(java.util.Map.of("available", false));
+        return Result.success(vramMonitor.info());
     }
 
     /** 确认危险操作并执行 */
@@ -48,9 +59,10 @@ public class AgentController {
             String question = String.valueOf(body.getOrDefault("question", ""));
             String action = String.valueOf(body.getOrDefault("action", ""));
             String sessionId = String.valueOf(body.getOrDefault("sessionId", ""));
+            String role = String.valueOf(body.getOrDefault("role", ""));
             @SuppressWarnings("unchecked")
             Map<String, Object> params = (Map<String, Object>) body.get("params");
-            return Result.success(agentService.confirm(question, action, params, userId, sessionId));
+            return Result.success(agentService.confirm(question, action, params, userId, sessionId, role));
         } catch (Exception e) {
             return Result.error("AI 服务暂不可用：" + e.getMessage());
         }
